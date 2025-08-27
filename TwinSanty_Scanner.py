@@ -160,14 +160,14 @@ def fetch_cve_from_circl(session: requests.Session, cve: str, timeout: int = 10,
         if r.status_code == 200:
             data = r.json()
             
-            # Handle both old and new CIRCL API response formats
+            
             summary = None
             cvss = None
             cvss3 = None
             references = None
             last_modified = None
             
-            # Try old format first (direct summary field)
+            
             if "summary" in data:
                 summary = data.get("summary")
                 cvss = data.get("cvss")
@@ -757,5 +757,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
