@@ -25,8 +25,8 @@ import requests
 # Configuration
 # --------------------
 DEFAULT_JSON = "results_all.json"
-DEFAULT_OUTPUT = "shodan_analysis_report.html"
-AGG_JSON = "aggregated_shodan_results.json"
+DEFAULT_OUTPUT = "analysis_report.html"
+AGG_JSON = "aggregated_results.json"
 DEFAULT_CHUNK = 8
 DEFAULT_CLOUD_MODEL = "gpt-oss:120b"
 DEFAULT_LOCAL_MODEL = "nous-hermes2:latest"
