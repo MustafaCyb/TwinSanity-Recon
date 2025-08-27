@@ -34,7 +34,7 @@ def generate_html_report(aggregated_data: Dict[str, Any], output_file: str = "re
     try:
         # --- Data Extraction ---
         llm_results = aggregated_data.get("llm_analysis_results", [])
-        is_llm_run = bool(llm_results) # Check if LLM analysis was performed
+        is_llm_run = bool(llm_results)
         
         summary_points = []
         high_risk_assets = []
@@ -219,3 +219,4 @@ function sortTable(columnIndex, isNumeric = false) {{
 
     except Exception as e:
         return False, f"Failed to generate HTML report: {e}"
+
