@@ -19,7 +19,7 @@ from urllib3.util.retry import Retry
 from tqdm import tqdm
 from dotenv import load_dotenv
 import subprocess
-
+from report_generator import generate_html_report
 
 # ---------- Configuration ----------
 CVE_CACHE_FILENAME = "cve_cache.json"
@@ -699,7 +699,6 @@ def main():
             logging.error("Failed to launch agent.py: %s", e)
 
     elif args.report_only:
-        from shodan_report_generator import generate_html_report
         logging.info("Report-only mode activated. Skipping LLM agent.")
         if not combined_file.exists():
             logging.error(f"Cannot generate report: results file not found at {combined_file}")
@@ -739,7 +738,7 @@ def main():
                 "all_discovered_cves": final_cve_list
             }
             
-            report_dir = outdir / "shodan_report"
+            report_dir = outdir / "report"
             report_dir.mkdir(parents=True, exist_ok=True)
             report_path = report_dir / args.report_name
 
