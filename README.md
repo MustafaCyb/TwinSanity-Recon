@@ -27,7 +27,7 @@ Born from the interdimensional madness of Crash TwinSanity, this scanner doesn't
 ║  🎯 QUANTUM TARGETING: AI-powered threat hunting madness     ║
 ║  💎 GEM COLLECTION: CVE hunting from multiple dimensions     ║
 ║  🌀 SPIN ATTACK: Proxy rotation for stealth operations       ║
-║  📊 CORTEX ANALYSIS: Professional reports that WOW          ║
+║  📊 CORTEX ANALYSIS: Professional reports that WOW           ║
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
