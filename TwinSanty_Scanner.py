@@ -738,7 +738,7 @@ def main():
                 "all_discovered_cves": final_cve_list
             }
             
-            report_dir = outdir / "report"
+            report_dir = outdir / "reports"
             report_dir.mkdir(parents=True, exist_ok=True)
             report_path = report_dir / args.report_name
 
@@ -757,4 +757,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
