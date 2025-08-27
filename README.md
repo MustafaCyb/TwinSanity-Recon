@@ -1,2 +1,2 @@
-# Twin.Sanity-Scanner-
+# TwinSanity-Scanner
 N.santy is not enough let's double it! welcome to TwinSanty scanner
