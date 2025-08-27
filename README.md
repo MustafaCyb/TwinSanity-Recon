@@ -27,7 +27,7 @@ Born from the interdimensional madness of Crash TwinSanity, this scanner doesn't
 ║  🎯 QUANTUM TARGETING: AI-powered threat hunting madness     ║
 ║  💎 GEM COLLECTION: CVE hunting from multiple dimensions     ║
 ║  🌀 SPIN ATTACK: Proxy rotation for stealth operations       ║
-║  📊 CORTEX ANALYSIS: Professional reports that WOW          ║
+║  📊 CORTEX ANALYSIS: Professional reports that WOW           ║
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
@@ -82,7 +82,7 @@ OLLAMA_API_KEY=your_ollama_warp_key
 | 🔥 **Shodan** | Internet-wide device scanning | [Get Shodan API Key](https://account.shodan.io/register) |
 | 🌟 **Google Gemini** | AI-powered vulnerability analysis | [Get Gemini API Key](https://aistudio.google.com/app/apikey) |
 | 🛡️ **NVD** | Enhanced CVE details (optional) | [Get NVD API Key](https://nvd.nist.gov/developers/request-an-api-key) |
-| ☁️ **Ollama Cloud** | Cloud-based LLM processing | [Get Ollama Cloud Access](https://ollama.com/pricing) |
+| ☁️ **Ollama Cloud** | Cloud-based LLM processing | [Get Ollama Cloud Access](https://ollama.com/settings/keys) |
 
 > 💡 **PRO TIP**: The NVD API key is optional but recommended for faster CVE lookups and higher rate limits!
 
