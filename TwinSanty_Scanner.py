@@ -398,7 +398,7 @@ def main():
     parser.add_argument("--domain", "-d", help="target domain (e.g. google.com)")
     parser.add_argument("--input", "-i", help="optional input file with ip,hostname lines (comma/tab/space separated)")
     parser.add_argument("--output", "-o", default="results", help="output directory")
-    parser.add_argument("--report-name", default="shodan_analysis_report.html", help="Name for the final HTML report file") # <-- ADD THIS LINE
+    parser.add_argument("--report-name", default="analysis_report.html", help="Name for the final HTML report file") # <-- ADD THIS LINE
     parser.add_argument("--concurrency", "-c", type=int, default=20, help="concurrency for network tasks (DNS + IP querying)")
     parser.add_argument("--timeout", type=int, default=15, help="per-request timeout")
     parser.add_argument("--delay", type=float, default=0.0, help="delay between each fetch (per-worker)")
@@ -757,3 +757,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
