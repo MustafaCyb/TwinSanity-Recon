@@ -27,7 +27,7 @@ Born from the interdimensional madness of Crash TwinSanity, this scanner doesn't
 ║  🎯 QUANTUM TARGETING: AI-powered threat hunting madness     ║
 ║  💎 GEM COLLECTION: CVE hunting from multiple dimensions     ║
 ║  🌀 SPIN ATTACK: Proxy rotation for stealth operations       ║
-║  📊 CORTEX ANALYSIS: Professional reports that WOW           ║
+║  📊 CORTEX ANALYSIS: Professional reports that WOW          ║
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
@@ -49,6 +49,23 @@ cp .env.example .env
 # ⚠️ Edit .env with your API keys - DON'T GET CAUGHT WITHOUT THEM!
 ```
 
+### 🤖 **LOCAL AI SETUP (Optional but POWERFUL!)**
+For maximum chaos with local AI models:
+```bash
+# Download and install Ollama for local LLM power
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull a powerful model for analysis
+ollama pull nous-hermes2:latest
+# Or try other models like:
+ollama pull llama2:13b
+ollama pull codellama:latest
+```
+📚 **Ollama Resources:**
+- 🔗 [Official Ollama Download](https://ollama.com/download)
+- 🔗 [Ollama Model Library](https://ollama.com/library)
+- 🔗 [Ollama GitHub Repository](https://github.com/ollama/ollama)
+
 ### 🗝️ **SECRET COMBINATIONS (.env)**
 ```env
 # 🌟 Your arsenal of API keys
@@ -57,6 +74,17 @@ GEMINI_API_KEY=your_gemini_dimension_key
 NVD_API_KEY=your_nvd_crystal_key
 OLLAMA_API_KEY=your_ollama_warp_key
 ```
+
+### 🎯 **API KEY ACQUISITION MISSIONS**
+
+| Service | Purpose | Get Your Key |
+|---------|---------|--------------|
+| 🔥 **Shodan** | Internet-wide device scanning | [Get Shodan API Key](https://account.shodan.io/register) |
+| 🌟 **Google Gemini** | AI-powered vulnerability analysis | [Get Gemini API Key](https://aistudio.google.com/app/apikey) |
+| 🛡️ **NVD** | Enhanced CVE details (optional) | [Get NVD API Key](https://nvd.nist.gov/developers/request-an-api-key) |
+| ☁️ **Ollama Cloud** | Cloud-based LLM processing | [Get Ollama Cloud Access](https://ollama.com/pricing) |
+
+> 💡 **PRO TIP**: The NVD API key is optional but recommended for faster CVE lookups and higher rate limits!
 
 ---
 
@@ -271,6 +299,17 @@ python TwinSanty_Scanner.py \
 
 ---
 
+## 🎨 **CONTRIBUTING TO THE MADNESS**
+
+Want to add more chaos to the mix?
+
+1. **🍴 FORK** the reality
+2. **🌿 BRANCH** into a new dimension (`git checkout -b feature/insane-addition`)
+3. **💾 COMMIT** your chaos (`git commit -m 'Add interdimensional scanner'`)
+4. **🚀 PUSH** to your reality (`git push origin feature/insane-addition`)
+5. **🔀 MERGE** realities with a Pull Request
+
+---
 
 ## 🎭 **HALL OF FAME**
 
@@ -302,8 +341,8 @@ unauthorized systems. Don't be a Ripper Roo - get permission first!
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
-║              🎮 MADE WITH CRASH-LEVEL INSANITY 🎮           ║  
-║             💥 DOUBLE THE SANITY, DOUBLE THE FUN! 💥        ║
+║           🎮 MADE WITH CRASH-LEVEL INSANITY 🎮              ║  
+║              💥 DOUBLE THE SANITY, DOUBLE THE FUN! 💥        ║
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
