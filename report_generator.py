@@ -29,7 +29,7 @@ def _get_cvss_color_class(score: Optional[float]) -> str:
         return "text-medium"
     return "text-low"
 
-def generate_html_report(aggregated_data: Dict[str, Any], output_file: str = "shodan_report.html") -> Tuple[bool, str]:
+def generate_html_report(aggregated_data: Dict[str, Any], output_file: str = "report.html") -> Tuple[bool, str]:
     """Generates the main HTML report."""
     try:
         # --- Data Extraction ---
