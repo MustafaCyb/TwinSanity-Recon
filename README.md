@@ -295,18 +295,6 @@ python TwinSanty_Scanner.py \
 
 ---
 
-## 🎨 **CONTRIBUTING TO THE MADNESS**
-
-Want to add more chaos to the mix?
-
-1. **🍴 FORK** the reality
-2. **🌿 BRANCH** into a new dimension (`git checkout -b feature/insane-addition`)
-3. **💾 COMMIT** your chaos (`git commit -m 'Add interdimensional scanner'`)
-4. **🚀 PUSH** to your reality (`git push origin feature/insane-addition`)
-5. **🔀 MERGE** realities with a Pull Request
-
----
-
 ## 🎭 **HALL OF FAME**
 
 Special thanks to the chaos creators:
