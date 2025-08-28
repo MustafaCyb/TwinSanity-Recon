@@ -337,8 +337,8 @@ unauthorized systems. Don't be a Ripper Roo - get permission first!
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
-║           🎮 MADE WITH CRASH-LEVEL INSANITY 🎮              ║  
-║              💥 DOUBLE THE SANITY, DOUBLE THE FUN! 💥        ║
+║           🎮  MADE WITH CRASH-LEVEL INSANITY    🎮          ║  
+║           💥 DOUBLE THE SANITY, DOUBLE THE FUN! 💥          ║
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
