@@ -89,20 +89,20 @@ OLLAMA_API_KEY=your_ollama_warp_key
 ### 🌪️ **BASIC SPIN ATTACK**
 ```bash
 # Simple but effective - like Crash's classic move!
-python TwinSanty_Scanner.py -d evil-corp.com -o destruction/
+python TwinSanity_Scanner.py -d evil-corp.com -o destruction/
 ```
 
 ### 🚀 **NITRO BOOST COMBO**
 ```bash
 # MAXIMUM OVERDRIVE with AI analysis
-python TwinSanty_Scanner.py -d target.com -o carnage/ \
+python TwinSanity_Scanner.py -d target.com -o carnage/ \
     --use-shodan --run-agent --report-name "CHAOS_REPORT.html"
 ```
 
 ### 💥 **CORTEX STRIKE** 
 ```bash
 # Full-scale interdimensional assault
-python TwinSanty_Scanner.py \
+python TwinSanity_Scanner.py \
     -d victim-domain.com \
     -o "TOTAL_ANNIHILATION/" \
     --bruteforce \
@@ -117,7 +117,7 @@ python TwinSanty_Scanner.py \
 ### 🎭 **STEALTH SHADOW CLONE**
 ```bash
 # Like N. Gin's sneaky robots
-python TwinSanty_Scanner.py \
+python TwinSanity_Scanner.py \
     -d classified-target.mil \
     -o "shadow_ops/" \
     --proxies-file "stealth/proxy_army.txt" \
@@ -237,7 +237,7 @@ python agent.py \
 ### 🏢 **CORPORATE FORTRESS ASSAULT**
 ```bash
 # Full corporate infiltration - Cortex style!
-python TwinSanty_Scanner.py \
+python TwinSanity_Scanner.py \
     -d "megacorp-industries.com" \
     -o "CORPORATE_DESTRUCTION/" \
     --bruteforce \
@@ -251,7 +251,7 @@ python TwinSanty_Scanner.py \
 ### 🕵️ **GHOST PROTOCOL OPERATION**  
 ```bash
 # Maximum stealth like Ripper Roo's sneaky traps
-python TwinSanty_Scanner.py \
+python TwinSanity_Scanner.py \
     -d "top-secret-facility.gov" \
     -o "CLASSIFIED_INTEL/" \
     --proxies-file "ghost_proxies.txt" \
@@ -264,7 +264,7 @@ python TwinSanty_Scanner.py \
 ### 🌊 **TSUNAMI SCAN WAVE**
 ```bash
 # Like a Crash beach level - overwhelming force!  
-python TwinSanty_Scanner.py \
+python TwinSanity_Scanner.py \
     -i "target_empire.txt" \
     --input-as-domains \
     -o "TSUNAMI_RESULTS/" \
