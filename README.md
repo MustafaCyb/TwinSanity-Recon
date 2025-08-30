@@ -1,7 +1,7 @@
 # 🎮 TwinSanity Recon 🔥
 
 <div align="center">
-  <img src="twinsanity-Recon-logo.png" alt="TwinSanity Recon Logo" width="600">
+  <img src="twinsanity-recon-logo.png" alt="TwinSanity Recon Logo" width="600">
 </div>
 
 
