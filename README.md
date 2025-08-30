@@ -34,7 +34,7 @@ Born from the interdimensional madness of Crash TwinSanity, this scanner doesn't
 ### ⚡ **POWER-UP INSTALLATION**
 ```bash
 # 🎮 Clone the chaos
-git clone https://github.com/yourusername/twinsanity-scanner.git
+git clone https://github.com/MustafaCyb/TwinSanity-Scanner.git
 cd TwinSanity-Scanner
 
 # 💣 Arm your scanner with dependencies
