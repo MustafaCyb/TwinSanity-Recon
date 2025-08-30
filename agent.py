@@ -50,7 +50,7 @@ logger = logging.getLogger("ShodanAgent")
 logger.addHandler(console_handler)
 
 parser = argparse.ArgumentParser(description="Shodan Security Analysis Agent (Gemini -> Ollama Cloud -> Local)")
-parser.add_argument("--json", default=DEFAULT_JSON, help="Input JSON from Twin.py")
+parser.add_argument("--json", default=DEFAULT_JSON, help="Input JSON from TwinSanity_Recon.py")
 parser.add_argument("--output", default=DEFAULT_OUTPUT, help="Output HTML report file")
 parser.add_argument("--chunk-size", type=int, default=DEFAULT_CHUNK, help="Number of IP entries to process per LLM call.")
 parser.add_argument("--cloud-model", default=DEFAULT_CLOUD_MODEL, help="Ollama cloud model name")
@@ -353,3 +353,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
