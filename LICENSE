@@ -1,0 +1,44 @@
+MIT License
+
+Copyright (c) 2025 MustafaCyb
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+ADDITIONAL TERMS FOR CYBERSECURITY TOOLS:
+
+This software is intended for legitimate cybersecurity testing, research, and 
+educational purposes only. Users are solely responsible for ensuring they have 
+proper authorization before scanning or testing any systems, networks, or 
+applications.
+
+By using this software, you agree to:
+- Only use this tool on systems you own or have explicit written permission to test
+- Comply with all applicable laws and regulations in your jurisdiction
+- Not use this software for any malicious, illegal, or unauthorized activities
+- Take full responsibility for any consequences resulting from the use of this software
+
+The authors and contributors of this project disclaim any liability for misuse
+of this software and are not responsible for any damage, legal issues, or other
+consequences that may arise from its use.
+
+Users are encouraged to:
+- Follow responsible disclosure practices when discovering vulnerabilities
+- Respect system owners' terms of service and acceptable use policies  
+- Implement appropriate rate limiting and delays to avoid disrupting target systems
+- Secure any sensitive data discovered during legitimate security assessments
