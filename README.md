@@ -1,334 +1,304 @@
-# 🎮 TwinSanity Recon 🔥
+# 🔍 TwinSanity Recon
 
 <div align="center">
   <img src="twinsanity-recon-logo.png" alt="TwinSanity Recon Logo" width="600">
 </div>
 
+A comprehensive cybersecurity reconnaissance tool for subdomain discovery, vulnerability scanning, and automated threat analysis.
 
-> **🌪️ N.Sanity is NOT enough, let's DOUBLE THE CHAOS! 🌪️**
-> 
-> *Welcome to the most TWISTED cybersecurity Recon in the multiverse - where reality bends and vulnerabilities EXPLODE into existence!*
+## 📋 Overview
 
----
+TwinSanity Recon is a multi-threaded reconnaissance framework designed for security professionals and penetration testers. It combines subdomain enumeration, certificate transparency monitoring, CVE analysis, and AI-powered reporting to provide comprehensive target assessment capabilities.
 
-## 💥 **THE CHAOS BEGINS HERE** 💥
+### ✨ Key Features
 
-Born from the interdimensional madness of Crash TwinSanity, this Recon doesn't just find vulnerabilities - it **DEMOLISHES** the boundaries between discovery and destruction! Like N. Tropy's time-splitting antics, TwinSanity Recon fractures your reconnaissance into parallel dimensions of PURE SCANNING POWER!
+- **🚀 Multi-threaded Subdomain Discovery**: Fast subdomain enumeration using various techniques
+- **🔒 Certificate Transparency Integration**: Leverages CT logs for comprehensive domain discovery
+- **🛡️ CVE Analysis**: Automated vulnerability detection with multiple data sources
+- **🤖 AI-Powered Reporting**: Generates detailed HTML reports with threat analysis
+- **🔀 Proxy Support**: Built-in proxy rotation for operational security
+- **📊 Multiple Data Sources**: Integrates with Shodan, NVD, and CIRCL for comprehensive coverage
+- **📈 Professional Reporting**: Generates structured HTML and JSON reports
 
-### 🎭 **TWISTED FEATURES** 
-```
-╔══════════════════════════════════════════════════════════════╗
-║  🚀 WARP ZONE SCANNING: Subdomain discovery at light speed   ║
-║  🔥 NITRO BOOST: Multi-threaded chaos across the network     ║
-║  🎯 QUANTUM TARGETING: AI-powered threat hunting madness     ║
-║  💎 GEM COLLECTION: CVE hunting from multiple dimensions     ║
-║  🌀 SPIN ATTACK: Proxy rotation for stealth operations       ║
-║  📊 CORTEX ANALYSIS: Professional reports that WOW           ║
-╚══════════════════════════════════════════════════════════════╝
-```
+## ⚙️ Installation
 
----
+### 📋 Prerequisites
 
-## 🏃‍♂️ **CRASH COURSE: GET STARTED** 
+- Python 3.8 or higher
+- pip package manager
+- Git
 
-### ⚡ **POWER-UP INSTALLATION**
+### 🚀 Setup
+
+1. **Clone the repository:**
 ```bash
-# 🎮 Clone the chaos
 git clone https://github.com/MustafaCyb/TwinSanity-Recon.git
 cd TwinSanity-Recon
-
-# 💣 Arm your Recon with dependencies
-pip install -r requirements.txt
-
-# 🔑 Unlock the vault of secrets
-cp .env.example .env
-# ⚠️ Edit .env with your API keys - DON'T GET CAUGHT WITHOUT THEM!
 ```
 
-### 🤖 **LOCAL AI SETUP (Optional but POWERFUL!)**
-For maximum chaos with local AI models:
+2. **Install dependencies:**
 ```bash
-# Download and install Ollama for local LLM power
+pip install -r requirements.txt
+```
+
+3. **Configure environment variables:**
+```bash
+cp .env.example .env
+# Edit .env with your API keys
+```
+
+### 🤖 Optional: Local AI Setup
+
+For enhanced analysis with local AI models, install Ollama:
+
+```bash
+# Install Ollama
 curl -fsSL https://ollama.com/install.sh | sh
 
-# Pull a powerful model for analysis
+# Download recommended model
 ollama pull nous-hermes2:latest
-# Or try other models like:
-ollama pull llama2:13b
-ollama pull codellama:latest
 ```
-📚 **Ollama Resources:**
-- 🔗 [Official Ollama Download](https://ollama.com/download)
-- 🔗 [Ollama Model Library](https://ollama.com/library)
-- 🔗 [Ollama GitHub Repository](https://github.com/ollama/ollama)
 
-### 🗝️ **SECRET COMBINATIONS (.env)**
+**🔗 Ollama Resources:**
+- [Official Download](https://ollama.com/download)
+- [Model Library](https://ollama.com/library)
+- [GitHub Repository](https://github.com/ollama/ollama)
+
+## ⚙️ Configuration
+
+### 🔑 Environment Variables
+
+Create a `.env` file with the following API keys:
+
 ```env
-# 🌟 Your arsenal of API keys
-SHODAN_API_KEY=your_shodan_portal_key
-GEMINI_API_KEY=your_gemini_dimension_key  
-NVD_API_KEY=your_nvd_crystal_key
-OLLAMA_API_KEY=your_ollama_warp_key
+SHODAN_API_KEY=your_shodan_api_key
+GEMINI_API_KEY=your_gemini_api_key
+NVD_API_KEY=your_nvd_api_key
+OLLAMA_API_KEY=your_ollama_api_key
 ```
 
-### 🎯 **API KEY ACQUISITION MISSIONS**
+### 🗝️ API Key Sources
 
-| Service | Purpose | Get Your Key |
-|---------|---------|--------------|
-| 🔥 **Shodan** | Internet-wide device scanning | [Get Shodan API Key](https://account.shodan.io/register) |
-| 🌟 **Google Gemini** | AI-powered vulnerability analysis | [Get Gemini API Key](https://aistudio.google.com/app/apikey) |
-| 🛡️ **NVD** | Enhanced CVE details (optional) | [Get NVD API Key](https://nvd.nist.gov/developers/request-an-api-key) |
-| ☁️ **Ollama Cloud** | Cloud-based LLM processing | [Get Ollama Cloud Access](https://ollama.com/settings/keys) |
+| Service | Purpose | Registration Link |
+|---------|---------|-------------------|
+| 🔥 **Shodan** | Internet device scanning | [Shodan Account](https://account.shodan.io/register) |
+| ⭐ **Google Gemini** | AI vulnerability analysis | [Gemini API](https://aistudio.google.com/app/apikey) |
+| 🛡️ **NVD** | CVE database access (optional) | [NVD API](https://nvd.nist.gov/developers/request-an-api-key) |
+| ☁️ **Ollama Cloud** | Cloud-based LLM processing | [Ollama Cloud](https://ollama.com/settings/keys) |
 
-> 💡 **PRO TIP**: The NVD API key is optional but recommended for faster CVE lookups and higher rate limits!
+> **💡 Note:** NVD API key is optional but recommended for enhanced rate limits and faster CVE lookups.
 
----
+## 🎯 Usage
 
-## 🎯 **COMBAT MOVES & ATTACK PATTERNS**
+### 🔰 Basic Usage
 
-### 🌪️ **BASIC SPIN ATTACK**
 ```bash
-# Simple but effective - like Crash's classic move!
-python TwinSanity_Recon.py -d evil-corp.com -o destruction/
+# Basic subdomain enumeration
+python TwinSanity_Recon.py -d example.com -o results/
 ```
 
-### 🚀 **NITRO BOOST COMBO**
+### 🚀 Advanced Usage
+
 ```bash
-# MAXIMUM OVERDRIVE with AI analysis
-python TwinSanity_Recon.py -d target.com -o carnage/ \
-    --use-shodan --run-agent --report-name "CHAOS_REPORT.html"
+# Comprehensive scan with AI analysis
+python TwinSanity_Recon.py -d target.com -o output/ \
+    --use-shodan --run-agent --report-name "security_report.html"
 ```
 
-### 💥 **CORTEX STRIKE** 
+### 💥 Full Feature Set
+
 ```bash
-# Full-scale interdimensional assault
+# Complete reconnaissance with all features
 python TwinSanity_Recon.py \
-    -d victim-domain.com \
-    -o "TOTAL_ANNIHILATION/" \
+    -d target-domain.com \
+    -o "results/" \
     --bruteforce \
-    --wordlist "weapons/massive_wordlist.txt" \
+    --wordlist "wordlists/subdomains.txt" \
     --use-shodan \
     --run-agent \
-    --concurrency 42 \
+    --concurrency 20 \
     --cve-sources all \
     --delay 0.5
 ```
 
-### 🎭 **STEALTH SHADOW CLONE**
+### 🥷 Stealth Mode
+
 ```bash
-# Like N. Gin's sneaky robots
+# Low-profile scanning with proxy rotation
 python TwinSanity_Recon.py \
-    -d classified-target.mil \
-    -o "shadow_ops/" \
-    --proxies-file "stealth/proxy_army.txt" \
+    -d target.com \
+    -o "stealth_results/" \
+    --proxies-file "proxies.txt" \
     --proxy-rotate \
-    --delay 3.0 \
+    --delay 2.0 \
     --concurrency 5
 ```
 
----
+## 🛠️ Command Line Options
 
-## 🎮 **POWER-UPS & SPECIAL ABILITIES**
+### 🎯 Target Specification
+- `-d, --domain`: Target domain for reconnaissance
+- `-i, --input`: Input file containing list of targets
+- `--input-as-domains`: Treat each line in input file as separate domain
 
-<details>
-<summary>🎯 <b>TARGETING SYSTEMS</b></summary>
+### 📁 Output Configuration
+- `-o, --output`: Output directory for results
+- `--report-name`: Custom name for HTML report
+- `--save-host-files`: Save individual files for each discovered host
 
-```bash
--d, --domain          🎯 Lock onto primary target
--i, --input           📋 Load target list from intel file  
---input-as-domains    🌐 Treat each line as a new dimension
-```
-</details>
+### ⚡ Performance Settings
+- `-c, --concurrency`: Number of concurrent threads (default: 20)
+- `--timeout`: Request timeout in seconds (default: 15)
+- `--delay`: Delay between requests in seconds
+- `--bruteforce`: Enable brute force subdomain discovery
+- `-w, --wordlist`: Path to custom wordlist file
 
-<details>
-<summary>💥 <b>DESTRUCTION PARAMETERS</b></summary>
+### 📊 Data Sources
+- `--use-shodan`: Enable Shodan integration
+- `--cve-sources`: CVE data sources (circl, nvd, shodan, all)
+- `--max-cve-workers-*`: Control CVE worker thread counts
 
-```bash
--o, --output          💾 Choose your battlefield folder
---report-name         📊 Name your victory report
---save-host-files     🗃️  Keep trophies of each conquest
-```
-</details>
+### 🔀 Proxy Configuration
+- `-P, --proxies-file`: File containing proxy list
+- `-PR, --proxy-rotate`: Enable proxy rotation
 
-<details>
-<summary>⚡ <b>CHAOS AMPLIFIERS</b></summary>
+### 🤖 AI Analysis
+- `--run-agent`: Enable AI-powered analysis and reporting
+- `--report-only`: Generate report from existing data without scanning
 
-```bash
--c, --concurrency     🚀 Parallel dimension count (default: 20)
---timeout             ⏰ Portal stability time (default: 15 sec)
---delay               😴 Stealth pause between strikes
---use-shodan          🔥 Activate the SHODAN MATRIX
---bruteforce          💣 Enable dictionary attack mode
--w, --wordlist        📖 Load your weapon of choice
-```
-</details>
-
-<details>
-<summary>💎 <b>CVE COLLECTION MATRIX</b></summary>
-
-```bash
---cve-sources         🎲 Pick your intel sources (circl,nvd,shodan,all)
---max-cve-workers-*   👥 Control your army size
-```
-</details>
-
-<details>
-<summary>👤 <b>STEALTH OPERATIONS</b></summary>
-
-```bash
--P, --proxies-file    🕵️ Load your disguise collection
--PR, --proxy-rotate   🌀 Spin through identities
-```
-</details>
-
-<details>
-<summary>🤖 <b>AI CORTEX ACTIVATION</b></summary>
-
-```bash
---run-agent           🧠 Deploy the AI overlord
---report-only         📈 Generate intel without scanning
-```
-</details>
-
----
-
-## 🏆 **LOOT & REWARDS SYSTEM**
-
-Your victories are stored in organized chaos:
+## 📂 Output Structure
 
 ```
-🎮 GAME_RESULTS/
-├── 💎 results_all.json          ← THE MASTER COLLECTION
-├── 📊 summary.csv               ← SCOREBOARD SUMMARY  
-├── 🧠 cve_cache.json           ← VULNERABILITY VAULT
-├── 🎯 individual_targets/       ← TROPHY ROOM
-├── 📋 REPORTS/
-│   ├── 🤖 aggregated_results.json  ← AI BRAIN DUMP
-│   └── 🏆 VICTORY_REPORT.html      ← YOUR EPIC SAGA
-└── 📝 agent.log                ← BATTLE CHRONICLES
+results/
+├── 📋 results_all.json          # Complete scan results
+├── 📊 summary.csv               # Summary of findings
+├── 💾 cve_cache.json           # CVE database cache
+├── 📁 individual_targets/       # Per-target detailed results
+├── 📈 REPORTS/
+│   ├── 🤖 aggregated_results.json  # AI analysis data
+│   └── 📄 security_report.html     # Final HTML report
+└── 📝 agent.log                # Analysis log
 ```
 
----
+## 🧠 AI Analysis Engine
 
-## 🤖 **THE CORTEX AI OVERLORD** 
+TwinSanity Recon includes an AI-powered analysis engine with multiple fallback options:
 
-Channel the power of Dr. Cortex himself with multiple AI dimensions:
+### 🏆 AI Model Hierarchy
+1. **⭐ Google Gemini** (Primary)
+2. **☁️ Ollama Cloud** (Secondary)
+3. **🏠 Ollama Local** (Fallback)
 
-### **🧠 THE HIERARCHY OF INTELLIGENCE**
-1. **🌟 GEMINI DIMENSION** (Primary Reality)
-2. **☁️ OLLAMA CLOUD** (Backup Universe) 
-3. **🏠 OLLAMA LOCAL** (Emergency Fallback)
+### 🔧 Standalone AI Analysis
 
-### **⚙️ CORTEX CONFIGURATION**
 ```bash
 python agent.py \
-    --json "raw_intel.json" \
-    --output "MASTER_PLAN.html" \
+    --json "scan_results.json" \
+    --output "analysis_report.html" \
     --chunk-size 8 \
     --cloud-model "gpt-oss:120b" \
     --local-model "nous-hermes2:latest" \
     --gemini-model "gemini-2.0-flash"
 ```
 
----
+## 🎯 Use Cases
 
-## 🎪 **BOSS BATTLE SCENARIOS**
-
-### 🏢 **CORPORATE FORTRESS ASSAULT**
+### 🏢 Enterprise Security Assessment
 ```bash
-# Full corporate infiltration - Cortex style!
 python TwinSanity_Recon.py \
-    -d "megacorp-industries.com" \
-    -o "CORPORATE_DESTRUCTION/" \
+    -d "company.com" \
+    -o "enterprise_assessment/" \
     --bruteforce \
-    --wordlist "arsenal/corporate_subs.txt" \
+    --wordlist "wordlists/enterprise.txt" \
     --use-shodan \
     --run-agent \
-    --concurrency 50 \
-    --report-name "CORPORATE_DOWNFALL.html"
+    --concurrency 30 \
+    --report-name "enterprise_security_report.html"
 ```
 
-### 🕵️ **GHOST PROTOCOL OPERATION**  
+### 🕵️ Stealth Penetration Testing
 ```bash
-# Maximum stealth like Ripper Roo's sneaky traps
 python TwinSanity_Recon.py \
-    -d "top-secret-facility.gov" \
-    -o "CLASSIFIED_INTEL/" \
-    --proxies-file "ghost_proxies.txt" \
+    -d "target.com" \
+    -o "pentest_results/" \
+    --proxies-file "proxy_list.txt" \
     --proxy-rotate \
-    --delay 5.0 \
-    --concurrency 3 \
+    --delay 3.0 \
+    --concurrency 5 \
     --cve-sources "circl,nvd"
 ```
 
-### 🌊 **TSUNAMI SCAN WAVE**
+### 📊 Bulk Assessment
 ```bash
-# Like a Crash beach level - overwhelming force!  
 python TwinSanity_Recon.py \
-    -i "target_empire.txt" \
+    -i "target_list.txt" \
     --input-as-domains \
-    -o "TSUNAMI_RESULTS/" \
+    -o "bulk_assessment/" \
     --use-shodan \
     --run-agent \
-    --concurrency 100 \
-    --max-cve-workers-global 50
+    --concurrency 50
 ```
 
----
+## 🔧 Troubleshooting
 
-## 🛡️ **SAFETY PROTOCOLS** 
-*Even chaos needs rules!*
+### ⚠️ Common Issues
 
-### ⚠️ **WARNING SIGNS**
-```
-🚨 RATE LIMIT DETECTED → Reduce --concurrency, add --delay
-🚨 CVE FETCH FAILING → Try different --cve-sources  
-🚨 MEMORY OVERLOAD → Lower --chunk-size for AI analysis
-🚨 PROXY ISSUES → Check your proxy list format
-```
+**🚦 Rate Limiting**
+- Reduce `--concurrency` value
+- Increase `--delay` between requests
+- Use proxy rotation with `--proxy-rotate`
 
-### 🔒 **RESPONSIBLE CHAOS**
-- Only target systems you OWN or have PERMISSION to scan
-- Store API keys in `.env` files, NOT in your code
-- Use delays and rate limiting to be a good netizen  
-- Consider proxy rotation for sensitive assessments
+**❌ CVE Fetch Failures**
+- Try different `--cve-sources` options
+- Check API key configuration
+- Verify network connectivity
 
----
+**💾 Memory Issues**
+- Reduce `--chunk-size` for AI analysis
+- Lower concurrency settings
+- Process targets in smaller batches
 
-## 🎭 **HALL OF FAME**
+**🔀 Proxy Issues**
+- Verify proxy list format (one proxy per line)
+- Test proxy connectivity manually
+- Check proxy authentication if required
 
-Special thanks to the chaos creators:
-- **Shodan.io** - For providing the all-seeing eye
-- **Certificate Transparency** - The crystal ball of domains  
-- **CIRCL & NVD** - The vulnerability archives
-- **The Crash Bandicoot Universe** - For inspiring pure madness
+## 🔒 Security Considerations
 
----
+### ✅ Responsible Use
+- Only scan systems you own or have explicit permission to test
+- Store API keys securely in environment files
+- Implement appropriate delays to avoid overwhelming target systems
+- Consider using proxy rotation for sensitive assessments
 
-## ⚖️ **LEGAL CHAOS DISCLAIMER**
+### 🛡️ Data Protection
+- Secure storage of scan results
+- Regular cleanup of temporary files
+- Proper handling of sensitive discovery data
 
-```
-🎮 THIS TOOL IS FOR LEGITIMATE SECURITY TESTING ONLY! 🎮
+## 🤝 Contributing
 
-Like Crash collecting Wumpa fruit, collect vulnerabilities RESPONSIBLY!
-The developers are NOT responsible if you go full N. Tropy on 
-unauthorized systems. Don't be a Ripper Roo - get permission first!
-```
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/new-feature`)
+3. Commit your changes (`git commit -am 'Add new feature'`)
+4. Push to the branch (`git push origin feature/new-feature`)
+5. Create a Pull Request
 
----
+## 📄 License
 
-## 🎪 **THE FINAL BOSS CREDITS**
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-*Licensed under MIT - Because even chaos needs structure*
+## 🙏 Acknowledgments
 
-**🌪️ REMEMBER: In the TwinSanity dimension, there's no such thing as too much chaos - only not enough WUMPA FRUIT! 🍎**
+- **🔥 Shodan.io** - For comprehensive internet device data
+- **🔒 Certificate Transparency** - For domain discovery capabilities
+- **🛡️ CIRCL & NVD** - For vulnerability database access
+- **🤖 Ollama** - For local AI model support
 
-```
-╔══════════════════════════════════════════════════════════════╗
-║           🎮  MADE WITH CRASH-LEVEL INSANITY    🎮          ║  
-║           💥 DOUBLE THE SANITY, DOUBLE THE FUN! 💥          ║
-╚══════════════════════════════════════════════════════════════╝
-```
+## ⚠️ Disclaimer
 
----
-*🎭 Now go forth and scan with the power of INTERDIMENSIONAL CHAOS! 🎭*
+**This tool is intended for legitimate security testing and research purposes only.** Users are responsible for ensuring they have proper authorization before scanning any systems. The developers assume no liability for misuse of this tool.
+
+## 💬 Support
+
+For issues, feature requests, or questions, please create an issue on the GitHub repository.
