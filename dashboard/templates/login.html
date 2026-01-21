@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <title>TwinSanity Recon V2 - Login</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --bg-secondary: #0a0a0a;
+            --bg-card: #111111;
+            --bg-elevated: #1a1a1a;
+            --bg-input: #0d0d0d;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            --accent-cyan: #00d4ff;
+            --accent-purple: #a855f7;
+            --accent-pink: #ec4899;
+            --accent-gradient: linear-gradient(135deg, #00d4ff 0%, #a855f7 50%, #ec4899 100%);
+            --danger: #ff3b5c;
+            --warning: #ffaa00;
+            --success: #00ff88;
+            --border-color: #222222;
+            --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image:
+                radial-gradient(ellipse at 20% 80%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 2rem;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--accent-gradient);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            box-shadow: var(--glow-cyan);
+        }
+
+        .logo-text {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-version {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-top: 0.25rem;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .card-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-input.error {
+            border-color: var(--danger);
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .checkbox-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent-cyan);
+        }
+
+        .checkbox-row label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 0.875rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: white;
+            box-shadow: var(--glow-cyan);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-primary.loading {
+            pointer-events: none;
+        }
+
+        .btn-primary.loading .btn-text {
+            opacity: 0;
+        }
+
+        .btn-primary.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            background: rgba(255, 59, 92, 0.1);
+            border: 1px solid var(--danger);
+            border-radius: 8px;
+            padding: 0.875rem 1rem;
+            margin-bottom: 1.25rem;
+            color: var(--danger);
+            font-size: 0.875rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .error-message.show {
+            display: flex;
+        }
+
+        .success-message {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 8px;
+            padding: 0.875rem 1rem;
+            margin-bottom: 1.25rem;
+            color: var(--success);
+            font-size: 0.875rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .success-message.show {
+            display: flex;
+        }
+
+        .password-requirements {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .password-requirements ul {
+            margin-top: 0.25rem;
+            padding-left: 1rem;
+        }
+
+        .password-requirements li {
+            margin-bottom: 0.15rem;
+        }
+
+        .password-requirements li.valid {
+            color: var(--success);
+        }
+
+        .password-requirements li.invalid {
+            color: var(--text-muted);
+        }
+
+        .lockout-warning {
+            background: rgba(255, 170, 0, 0.1);
+            border: 1px solid var(--warning);
+            border-radius: 8px;
+            padding: 0.875rem 1rem;
+            margin-bottom: 1.25rem;
+            color: var(--warning);
+            font-size: 0.875rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .lockout-warning.show {
+            display: flex;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="logo-section">
+            <div class="logo-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                    <path d="M2 17l10 5 10-5" />
+                    <path d="M2 12l10 5 10-5" />
+                </svg>
+            </div>
+            <div class="logo-text">TwinSanity</div>
+            <div class="logo-version">Reconnaissance V2</div>
+        </div>
+
+        <!-- Setup Form (First Time) -->
+        <div class="login-card" id="setupCard">
+            <h2 class="card-title">Welcome!</h2>
+            <p class="card-subtitle">Create your admin account to get started</p>
+
+            <div class="error-message" id="setupError">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="15" y1="9" x2="9" y2="15" />
+                    <line x1="9" y1="9" x2="15" y2="15" />
+                </svg>
+                <span id="setupErrorText"></span>
+            </div>
+
+            <form id="setupForm">
+                <div class="form-group">
+                    <label class="form-label" for="setupUsername">Username</label>
+                    <input type="text" id="setupUsername" class="form-input" placeholder="Enter username" required
+                        autocomplete="username" minlength="3" maxlength="32">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="setupPassword">Password</label>
+                    <input type="password" id="setupPassword" class="form-input" placeholder="Enter password" required
+                        autocomplete="new-password" minlength="8">
+                    <div class="password-requirements">
+                        Password must have:
+                        <ul>
+                            <li id="reqLength" class="invalid">At least 8 characters</li>
+                            <li id="reqUpper" class="invalid">At least 1 uppercase letter</li>
+                            <li id="reqLower" class="invalid">At least 1 lowercase letter</li>
+                            <li id="reqNumber" class="invalid">At least 1 number</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="setupConfirm">Confirm Password</label>
+                    <input type="password" id="setupConfirm" class="form-input" placeholder="Confirm password" required
+                        autocomplete="new-password">
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="setupBtn">
+                    <span class="btn-text">Create Account</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Auth Card (Login Only) -->
+        <div class="login-card hidden" id="loginCard">
+            <h2 class="card-title">Welcome Back</h2>
+            <p class="card-subtitle">Sign in to continue to TwinSanity Recon</p>
+
+            <div class="error-message" id="authError">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="15" y1="9" x2="9" y2="15" />
+                    <line x1="9" y1="9" x2="15" y2="15" />
+                </svg>
+                <span id="authErrorText"></span>
+            </div>
+
+            <div class="success-message" id="authSuccess">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span id="authSuccessText"></span>
+            </div>
+
+            <div class="lockout-warning" id="lockoutWarning">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <span id="lockoutText"></span>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" class="form-input" placeholder="Enter username" required
+                        autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" class="form-input" placeholder="Enter password" required
+                        autocomplete="current-password">
+                </div>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="rememberMe">
+                    <label for="rememberMe">Remember me for 30 days</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="loginBtn">
+                    <span class="btn-text">Login</span>
+                </button>
+            </form>
+
+        </div>
+
+        <div class="footer-text">
+            TwinSanity Recon V2 &copy; 2026 • Secure Access
+        </div>
+    </div>
+
+    <script>
+        // Check if this is first-time setup or login
+        async function checkSetupStatus() {
+            try {
+                const response = await fetch('/api/auth/check-setup');
+                const data = await response.json();
+
+                if (data.initialized) {
+                    // Show login form
+                    document.getElementById('setupCard').classList.add('hidden');
+                    document.getElementById('loginCard').classList.remove('hidden');
+                } else {
+                    // Show setup form
+                    document.getElementById('setupCard').classList.remove('hidden');
+                    document.getElementById('loginCard').classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Failed to check setup status:', error);
+            }
+        }
+
+        // Password validation (Setup)
+        document.getElementById('setupPassword').addEventListener('input', function () {
+            const password = this.value;
+            validatePassword(password, 'req');
+        });
+
+        function validatePassword(password, prefix) {
+            document.getElementById(`${prefix}Length`).className = password.length >= 8 ? 'valid' : 'invalid';
+            document.getElementById(`${prefix}Upper`).className = /[A-Z]/.test(password) ? 'valid' : 'invalid';
+            document.getElementById(`${prefix}Lower`).className = /[a-z]/.test(password) ? 'valid' : 'invalid';
+            document.getElementById(`${prefix}Number`).className = /[0-9]/.test(password) ? 'valid' : 'invalid';
+        }
+
+        // Setup form submission
+        document.getElementById('setupForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            handleAuthSubmit('/api/auth/setup', 'setupForm', 'setupBtn', 'setupError', 'setupErrorText');
+        });
+
+        // Login form submission
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
+
+            await handleAuthRequest('/api/auth/login', { username, password, remember_me: rememberMe }, 'loginBtn');
+        });
+
+        async function handleAuthRequest(endpoint, body, btnId) {
+            const btn = document.getElementById(btnId);
+            const errorDiv = document.getElementById('authError');
+            const errorText = document.getElementById('authErrorText');
+            const successDiv = document.getElementById('authSuccess');
+            const successText = document.getElementById('authSuccessText');
+
+            errorDiv.classList.remove('show');
+            successDiv.classList.remove('show');
+            btn.classList.add('loading');
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Redirect to dashboard on successful login
+                    window.location.href = '/';
+                } else if (response.status === 429) {
+                    const lockoutDiv = document.getElementById('lockoutWarning');
+                    const lockoutText = document.getElementById('lockoutText');
+                    lockoutText.textContent = data.detail || 'Too many failed attempts. Please wait.';
+                    lockoutDiv.classList.add('show');
+                } else {
+                    errorText.textContent = data.detail || data.error || 'Operation failed';
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                errorText.textContent = 'Connection error. Please try again.';
+                errorDiv.classList.add('show');
+            } finally {
+                btn.classList.remove('loading');
+            }
+        }
+
+        // Helper to handle Setup form consistently
+        async function handleAuthSubmit(endpoint, formId, btnId, errorDivId, errorTextId) {
+            const username = document.getElementById('setupUsername').value.trim();
+            const password = document.getElementById('setupPassword').value;
+            const confirm = document.getElementById('setupConfirm').value;
+            const btn = document.getElementById(btnId);
+            const errorDiv = document.getElementById(errorDivId);
+            const errorText = document.getElementById(errorTextId);
+
+            // Validate password requirements
+            if (password.length < 8) {
+                errorText.textContent = 'Password must be at least 8 characters';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+                errorText.textContent = 'Password must contain uppercase, lowercase, and number';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            if (password !== confirm) {
+                errorText.textContent = 'Passwords do not match';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            errorDiv.classList.remove('show');
+            btn.classList.add('loading');
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Redirect to login
+                    window.location.href = '/login';
+                } else {
+                    errorText.textContent = data.detail || data.error || 'Setup failed';
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                errorText.textContent = 'Connection error. Please try again.';
+                errorDiv.classList.add('show');
+            } finally {
+                btn.classList.remove('loading');
+            }
+        }
+
+        function showError(divId, message) {
+            const div = document.getElementById(divId);
+            const text = div.querySelector('span');
+            text.textContent = message;
+            div.classList.add('show');
+        }
+
+        // Initialize on page load
+        checkSetupStatus();
+    </script>
+</body>
+
+</html>

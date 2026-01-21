@@ -1,0 +1,398 @@
+app:
+  name: TwinSanity Recon V2
+  version: 2.0.0
+  debug: false
+  host: 127.0.0.1
+  port: 8888
+  production: false  # Set to true for HTTPS production deployment
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# API Keys Configuration
+# IMPORTANT: Add your API keys below. Keep this file secure!
+# ═══════════════════════════════════════════════════════════════════════════════
+api_keys:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Reconnaissance APIs (Optional - enhances subdomain/CVE discovery)
+  # ─────────────────────────────────────────────────────────────────────────────
+  shodan: ''           # https://account.shodan.io/
+  virustotal: ''       # https://www.virustotal.com/gui/my-apikey
+  nvd: ''              # https://nvd.nist.gov/developers/request-an-api-key
+  securitytrails: ''   # https://securitytrails.com/corp/api
+  chaos: ''            # https://chaos.projectdiscovery.io/
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # AI/LLM Provider APIs (At least ONE required for AI Analysis)
+  # ─────────────────────────────────────────────────────────────────────────────
+  gemini: ''           # https://aistudio.google.com/app/apikey (FREE - Recommended)
+  openai: ''           # https://platform.openai.com/api-keys
+  anthropic: ''        # https://console.anthropic.com/
+  github: ''           # https://github.com/settings/tokens (for GitHub Models)
+  ollama_cloud: ''     # Hosted Ollama API key (if using cloud Ollama)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Security Settings
+# ═══════════════════════════════════════════════════════════════════════════════
+security:
+  auth_enabled: true
+  session:
+    password_min_length: 8
+    max_login_attempts: 5
+    lockout_minutes: 15
+    session_hours: 24
+    remember_me_days: 30
+  rate_limiting:
+    enabled: true
+    scan_per_minute: 5
+    chat_per_minute: 30
+    api_per_minute: 60
+  allowed_providers:
+    analysis:
+    - local
+    - gemini
+    - ollama_cloud
+    chat:
+    - local
+    - gemini
+    - ollama_cloud
+  data_redaction:
+    enabled: false
+    redact_ips: false
+    redact_hostnames: false
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Database
+# ═══════════════════════════════════════════════════════════════════════════════
+database:
+  path: data/twinsanity.db
+  cache_ttl_days: 7
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Subdomain Discovery Sources
+# ═══════════════════════════════════════════════════════════════════════════════
+subdomain_sources:
+  global:
+    max_retries: 2
+    retry_delay: 1.0
+    validate_dns: false
+    concurrency: 10
+  crtsh:
+    enabled: true
+    timeout: 45
+    rate_limit: 2.0
+  hackertarget:
+    enabled: true
+    timeout: 15
+    rate_limit: 1.5
+  rapiddns:
+    enabled: true
+    timeout: 20
+    rate_limit: 0.5
+  urlscan:
+    enabled: true
+    timeout: 25
+    rate_limit: 1.0
+  webarchive:
+    enabled: false
+    timeout: 60
+    rate_limit: 0.5
+  bufferover:
+    enabled: false
+    timeout: 20
+    rate_limit: 0.5
+  certspotter:
+    enabled: true
+    timeout: 25
+    rate_limit: 1.5
+  alienvault:
+    enabled: true
+    timeout: 25
+    rate_limit: 1.0
+  anubis:
+    enabled: true
+    timeout: 20
+    rate_limit: 0.5
+  dnsdumpster:
+    enabled: true
+    timeout: 30
+    rate_limit: 2.0
+  shodan:
+    enabled: true
+    timeout: 30
+    rate_limit: 1.0
+  securitytrails:
+    enabled: false
+    timeout: 30
+    rate_limit: 1.0
+  virustotal:
+    enabled: true
+    timeout: 30
+    rate_limit: 15.0
+  threatcrowd:
+    enabled: false
+    timeout: 20
+    rate_limit: 1.0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CVE Sources
+# ═══════════════════════════════════════════════════════════════════════════════
+cve_sources:
+- name: circl
+  enabled: true
+  priority: 1
+- name: shodan
+  enabled: true
+  priority: 2
+- name: nvd
+  enabled: true
+  priority: 3
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LLM/AI Configuration
+# ═══════════════════════════════════════════════════════════════════════════════
+llm:
+  defaults:
+    analysis: gemini
+    chat: local
+    deep_analysis: local
+  fallback_chain:
+  - gemini
+  - ollama_cloud
+  - local
+  providers:
+    gemini:
+      enabled: true
+      url: https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
+      model: gemini-2.0-flash
+      models:
+        gemini-2.0-flash: Gemini 2.0 Flash
+        gemini-1.5-pro: Gemini 1.5 Pro
+        gemini-1.5-flash: Gemini 1.5 Flash
+      max_retries: 4
+      backoff_base: 3
+      timeout: 90
+    ollama_cloud:
+      enabled: true
+      host: https://ollama.com
+      model: deepseek-v3.1:671b
+      models:
+        deepseek-v3.1:671b: DeepSeek V3
+        gpt-oss:120b: GPT-OSS 120B
+      max_retries: 4
+      backoff_base: 3
+      timeout: 120
+    openai:
+      enabled: true
+      models:
+        gpt-4o: GPT-4o
+        gpt-4o-mini: GPT-4o Mini
+        gpt-4-turbo: GPT-4 Turbo
+        gpt-3.5-turbo: GPT-3.5 Turbo
+    anthropic:
+      enabled: true
+      models:
+        claude-3-5-sonnet-20241022: Claude 3.5 Sonnet
+        claude-3-opus-20240229: Claude 3 Opus
+        claude-3-haiku-20240307: Claude 3 Haiku
+    github:
+      enabled: true
+      models:
+        gpt-4o: GPT-4o (GitHub)
+        gpt-4o-mini: GPT-4o Mini (GitHub)
+        Phi-3-medium-4k-instruct: Phi-3 Medium
+        Mistral-large: Mistral Large
+    local:
+      enabled: true
+      host: http://127.0.0.1:11434
+      models:
+        default: llama3.1:latest
+        reasoning: deepseek-r1:8b
+        fast: nous-hermes2:latest
+      max_tokens: 4096
+      temperature: 0.1
+      max_retries: 4
+      backoff_base: 3
+  cache:
+    enabled: true
+    ttl_hours: 6
+    max_entries: 500
+    persist_to_disk: false
+  reasoning:
+    use_chain_of_thought: true
+    enable_thinking_mode: true
+    enable_self_consistency: false
+    self_consistency_samples: 3
+  grounding:
+    enabled: true
+    validate_cve_ids: true
+    validate_ips: true
+    confidence_threshold: 0.7
+  analysis:
+    enabled: true
+    chunk_size: 18
+    rate_limit_sleep: 1.0
+  context:
+    max_tokens: 8000
+    max_findings: 50
+    max_hosts: 30
+    include_full_summaries: true
+    prioritize_critical: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Scan Settings
+# ═══════════════════════════════════════════════════════════════════════════════
+scan:
+  dns_concurrency: 50
+  ip_concurrency: 20
+  max_cves_per_ip: 20
+  validate_dns: false
+  timeout: 15
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# UI Settings
+# ═══════════════════════════════════════════════════════════════════════════════
+ui:
+  theme: dark
+  auto_refresh: 0
+  verbose_logs: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LLM Results Reader (for chat context)
+# ═══════════════════════════════════════════════════════════════════════════════
+llm_reader:
+  enabled: true
+  file_patterns:
+  - results/*.json
+  - results/scan_*.json
+  - data/*.json
+  context:
+    max_findings: 100
+    max_hosts: 100
+    include_ports: true
+    include_technologies: true
+  rag:
+    enabled: true
+    relevance_boost_critical: 2.0
+    relevance_boost_high: 1.0
+    keyword_bonus_cve_match: 3.0
+    keyword_bonus_host_match: 2.0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Proxy Configuration (Optional)
+# ═══════════════════════════════════════════════════════════════════════════════
+proxy:
+  enabled: false
+  rotation_mode: round_robin
+  validate_on_load: false
+  validation_timeout: 10
+  remove_invalid: true
+  single_proxy: ''
+  proxy_file: ''
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Wordlist Settings
+# ═══════════════════════════════════════════════════════════════════════════════
+wordlist:
+  default: small
+  directory: wordlists
+  rate_limit: 50
+  concurrency: 100
+  dns_timeout: 5
+  filter_http: false
+  filter_dns: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Report Generation
+# ═══════════════════════════════════════════════════════════════════════════════
+reports:
+  directory: reports
+  default_format: html
+  include:
+    executive_summary: true
+    severity_chart: true
+    ip_breakdown: true
+    top_cves: true
+    recommendations: true
+    detailed_findings: true
+  max_detailed_findings: 100
+  organization: ''
+  disclaimer: This report is confidential and intended for authorized personnel only.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HTTP Probing
+# ═══════════════════════════════════════════════════════════════════════════════
+http_probing:
+  enabled: true
+  concurrency: 50
+  timeout: 10
+  protocols:
+  - https
+  - http
+  tech_detection: true
+  follow_redirects: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Nuclei Vulnerability Scanning
+# ═══════════════════════════════════════════════════════════════════════════════
+nuclei:
+  enabled: false
+  templates:
+  - cves
+  - exposed-panels
+  - misconfigurations
+  - exposures
+  - takeovers
+  severity: critical,high
+  rate_limit: 150
+  concurrency: 25
+  python_fallback: true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# URL Harvesting
+# ═══════════════════════════════════════════════════════════════════════════════
+url_harvesting:
+  enabled: true
+  sources:
+  - wayback
+  - commoncrawl
+  - alienvault
+  timeout: 60
+  filter_interesting: true
+  interesting_extensions:
+  - js
+  - json
+  - xml
+  - php
+  - asp
+  - jsp
+  - env
+  - config
+  - bak
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# XSS Scanning
+# ═══════════════════════════════════════════════════════════════════════════════
+xss_scan:
+  enabled: false
+  payloads:
+    - '<script>alert(1)</script>'
+    - '"onmouseover="alert(1)'
+    - "'onmouseover='alert(1)'"
+  max_urls: 100
+  timeout: 10
+  concurrency: 10
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# API Discovery
+# ═══════════════════════════════════════════════════════════════════════════════
+api_discovery:
+  enabled: true
+  scan_js_files: true
+  scan_wayback: true
+  patterns:
+    - '/api/'
+    - '/v1/'
+    - '/v2/'
+    - '/graphql'
+    - '/rest/'
+  max_endpoints: 500
+  timeout: 30

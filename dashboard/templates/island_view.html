@@ -1,0 +1,2196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏝️ TwinSanity Island - Crash Bandicoot Style Security View</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bangers&family=Bungee&family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --crash-orange: #ff6b00;
+            --crash-blue: #00d4ff;
+            --crash-purple: #8b5cf6;
+            --crash-gold: #ffd700;
+            --crash-red: #ff2d55;
+            --crash-green: #00ff7f;
+            --crash-dark: #0a0015;
+            --tnt-red: #dc2626;
+            --nitro-green: #22c55e;
+            --wumpa-orange: #f97316;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(180deg,
+                    #0a0015 0%,
+                    #1a0a3e 20%,
+                    #0d2847 40%,
+                    #0a1628 60%,
+                    #0f0a1f 80%,
+                    #0a0015 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        /* Animated Wumpa Fruit Background */
+        .wumpa-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .wumpa-fruit {
+            position: absolute;
+            font-size: 2.5rem;
+            opacity: 0.2;
+            animation: wumpaFloat 20s linear infinite;
+            filter: drop-shadow(0 0 10px rgba(255, 150, 0, 0.3));
+        }
+
+        @keyframes wumpaFloat {
+            0% {
+                transform: translateY(100vh) rotate(0deg) scale(0.8);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 0.25;
+            }
+
+            50% {
+                transform: translateY(50vh) rotate(180deg) scale(1);
+            }
+
+            90% {
+                opacity: 0.2;
+            }
+
+            100% {
+                transform: translateY(-100px) rotate(360deg) scale(0.8);
+                opacity: 0;
+            }
+        }
+
+        /* Animated Stars/Sparkles - Crystal & Gem Style */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background-image:
+                radial-gradient(3px 3px at 20px 30px, var(--crash-gold), transparent),
+                radial-gradient(2px 2px at 40px 70px, var(--crash-blue), transparent),
+                radial-gradient(2px 2px at 90px 40px, #fff, transparent),
+                radial-gradient(3px 3px at 160px 120px, var(--crash-purple), transparent),
+                radial-gradient(2px 2px at 180px 80px, var(--crash-orange), transparent),
+                radial-gradient(3px 3px at 250px 150px, var(--nitro-green), transparent),
+                radial-gradient(2px 2px at 300px 60px, var(--crash-gold), transparent),
+                radial-gradient(2px 2px at 350px 180px, var(--crash-blue), transparent);
+            background-size: 400px 200px;
+            animation: twinkle 4s ease-in-out infinite;
+            opacity: 0.7;
+            z-index: 0;
+        }
+
+        @keyframes twinkle {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            25% {
+                opacity: 0.9;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+
+            75% {
+                opacity: 0.85;
+            }
+        }
+
+        /* Floating Crystal Particles */
+        .crystal-particle {
+            position: fixed;
+            width: 8px;
+            height: 12px;
+            background: linear-gradient(180deg, var(--crash-purple), var(--crash-blue));
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            animation: crystalFloat 15s linear infinite;
+            opacity: 0.4;
+            z-index: 0;
+        }
+
+        @keyframes crystalFloat {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 0.4;
+            }
+
+            90% {
+                opacity: 0.3;
+            }
+
+            100% {
+                transform: translateY(-50px) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* Crash-Style Header */
+        .header {
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.9) 0%, rgba(26, 10, 62, 0.8) 100%);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid var(--crash-orange);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 30px rgba(255, 107, 0, 0.3);
+        }
+
+        .logo {
+            font-family: 'Bungee', cursive;
+            font-size: 2.4rem;
+            background: linear-gradient(180deg, var(--crash-gold) 0%, var(--crash-orange) 50%, #ff4500 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+            filter: drop-shadow(4px 4px 0 rgba(0, 0, 0, 0.6));
+            letter-spacing: 3px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            position: relative;
+        }
+
+        .logo::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -10px;
+            right: -10px;
+            bottom: -5px;
+            background: radial-gradient(ellipse at center, rgba(255, 215, 0, 0.2) 0%, transparent 70%);
+            z-index: -1;
+            animation: logoGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes logoGlow {
+
+            0%,
+            100% {
+                opacity: 0.5;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(1.1);
+            }
+        }
+
+        .logo .crash-icon {
+            font-size: 3rem;
+            animation: logoBounce 1.5s ease-in-out infinite;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+        }
+
+        @keyframes logoBounce {
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(-10deg);
+            }
+
+            50% {
+                transform: translateY(-8px) rotate(10deg);
+            }
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .logo span {
+            background: linear-gradient(180deg, var(--crash-blue) 0%, var(--crash-purple) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .crash-btn {
+            background: linear-gradient(180deg, var(--crash-orange) 0%, #cc5500 100%);
+            border: 3px solid var(--crash-gold);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: 'Bangers', cursive;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            transition: all 0.15s ease;
+            box-shadow:
+                0 6px 0 #8b4000,
+                0 8px 20px rgba(255, 107, 0, 0.5),
+                inset 0 2px 0 rgba(255, 255, 255, 0.3),
+                inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .crash-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .crash-btn:hover::before {
+            left: 100%;
+        }
+
+        .crash-btn:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow:
+                0 10px 0 #8b4000,
+                0 14px 40px rgba(255, 107, 0, 0.7),
+                inset 0 2px 0 rgba(255, 255, 255, 0.4),
+                inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .crash-btn:active {
+            transform: translateY(4px) scale(0.98);
+            box-shadow:
+                0 2px 0 #8b4000,
+                0 4px 10px rgba(255, 107, 0, 0.3),
+                inset 0 2px 0 rgba(0, 0, 0, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .crash-btn.blue {
+            background: linear-gradient(180deg, var(--crash-blue) 0%, #0088bb 100%);
+            border-color: #00ffff;
+            box-shadow:
+                0 6px 0 #005577,
+                0 8px 20px rgba(0, 212, 255, 0.5),
+                inset 0 2px 0 rgba(255, 255, 255, 0.3),
+                inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .crash-btn.blue:hover {
+            box-shadow:
+                0 10px 0 #005577,
+                0 14px 40px rgba(0, 212, 255, 0.7),
+                inset 0 2px 0 rgba(255, 255, 255, 0.4),
+                inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .crash-btn.blue:active {
+            box-shadow:
+                0 2px 0 #005577,
+                0 4px 10px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Scan Info Banner - Crash Style */
+        .scan-info-banner {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(0, 212, 255, 0.2) 100%);
+            border: 3px solid var(--crash-purple);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scan-info-banner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%) rotate(45deg);
+            }
+
+            100% {
+                transform: translateX(100%) rotate(45deg);
+            }
+        }
+
+        .scan-info-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .scan-selector-row {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .scan-selector h2 {
+            font-family: 'Bungee', cursive;
+            background: linear-gradient(180deg, var(--crash-gold) 0%, var(--crash-orange) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.5rem;
+            white-space: nowrap;
+        }
+
+        .scan-selector-row select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background:
+                linear-gradient(135deg, rgba(30, 20, 50, 0.95) 0%, rgba(10, 5, 20, 0.98) 100%),
+                url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0L20 20L0 20Z' fill='%236b21a8' opacity='0.1'/%3E%3C/svg%3E");
+            border: 4px solid var(--crash-orange);
+            color: var(--crash-gold);
+            padding: 0.8rem 3rem 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            min-width: 400px;
+            cursor: pointer;
+            font-family: 'Bangers', cursive;
+            letter-spacing: 1.5px;
+            text-shadow: 2px 2px 0 #000;
+            box-shadow:
+                0 6px 0 #8B4513,
+                0 10px 20px rgba(0, 0, 0, 0.5),
+                inset 0 2px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+            /* Custom Arrow */
+            background-image:
+                linear-gradient(45deg, transparent 50%, var(--crash-gold) 50%),
+                linear-gradient(135deg, var(--crash-gold) 50%, transparent 50%);
+            background-position:
+                calc(100% - 25px) calc(50% + 2px),
+                calc(100% - 15px) calc(50% + 2px);
+            background-size:
+                10px 10px,
+                10px 10px;
+            background-repeat: no-repeat;
+        }
+
+        .scan-selector-row select:hover {
+            transform: translateY(-4px) scale(1.02);
+            border-color: var(--crash-gold);
+            color: #fff;
+            box-shadow:
+                0 10px 0 #8B4513,
+                0 20px 40px rgba(255, 107, 0, 0.4),
+                0 0 20px rgba(255, 215, 0, 0.2);
+            text-shadow: 2px 2px 0 var(--crash-orange);
+        }
+
+        .scan-selector-row select:focus {
+            outline: none;
+            border-color: var(--nitro-green);
+            box-shadow:
+                0 6px 0 #064e3b,
+                0 0 30px rgba(34, 197, 94, 0.4);
+            animation: none;
+        }
+
+        @keyframes selectGlow {
+
+            0%,
+            100% {
+                box-shadow: 0 6px 0 #8B4513, 0 0 30px rgba(255, 215, 0, 0.5), 0 0 60px rgba(255, 107, 0, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 6px 0 #8B4513, 0 0 40px rgba(255, 215, 0, 0.7), 0 0 80px rgba(255, 107, 0, 0.5);
+            }
+        }
+
+        .scan-selector select option {
+            background: #1a0a3e;
+            color: var(--crash-gold);
+            padding: 1rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .scan-meta {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .scan-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            color: #b0b0b0;
+        }
+
+        .scan-meta-item .icon {
+            font-size: 1.2rem;
+        }
+
+        .scan-meta-item .value {
+            color: var(--crash-blue);
+            font-weight: 600;
+        }
+
+        /* Crash-Style Stats Bar - Like Wumpa Counter */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+            perspective: 1000px;
+        }
+
+        .stat-card {
+            background: linear-gradient(180deg, rgba(30, 20, 60, 0.95) 0%, rgba(15, 10, 30, 0.98) 100%);
+            border: 4px solid var(--crash-purple);
+            border-radius: 20px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            box-shadow:
+                0 8px 0 rgba(80, 40, 120, 0.8),
+                0 12px 30px rgba(0, 0, 0, 0.5),
+                inset 0 2px 0 rgba(255, 255, 255, 0.1);
+            transform-style: preserve-3d;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--crash-blue), var(--crash-purple), transparent);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(transparent, rgba(255, 215, 0, 0.1), transparent 30%);
+            animation: statRotate 6s linear infinite;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .stat-card:hover::after {
+            opacity: 1;
+        }
+
+        @keyframes statRotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .stat-card:hover {
+            transform: translateY(-12px) rotateX(5deg);
+            border-color: var(--crash-gold);
+            box-shadow:
+                0 16px 0 rgba(80, 40, 120, 0.6),
+                0 20px 50px rgba(255, 215, 0, 0.3),
+                inset 0 2px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-card .icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            display: block;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+            animation: iconFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes iconFloat {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+
+            50% {
+                transform: translateY(-5px) scale(1.05);
+            }
+        }
+
+        .stat-card .number {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 2.2rem;
+            color: var(--crash-blue);
+            text-shadow:
+                0 0 10px currentColor,
+                0 0 20px currentColor,
+                0 0 40px rgba(0, 212, 255, 0.3),
+                2px 2px 0 rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+
+        .stat-card.critical .number {
+            color: var(--tnt-red);
+            text-shadow:
+                0 0 10px currentColor,
+                0 0 20px currentColor,
+                0 0 40px rgba(220, 38, 38, 0.5),
+                2px 2px 0 rgba(0, 0, 0, 0.8);
+            animation: dangerPulse 1s ease-in-out infinite;
+        }
+
+        .stat-card.critical {
+            border-color: var(--tnt-red);
+            box-shadow:
+                0 8px 0 rgba(150, 30, 30, 0.8),
+                0 12px 30px rgba(220, 38, 38, 0.4);
+        }
+
+        .stat-card.critical::before {
+            background: linear-gradient(90deg, transparent, var(--tnt-red), #ff4444, var(--tnt-red), transparent);
+        }
+
+        .stat-card.warning .number {
+            color: var(--wumpa-orange);
+            text-shadow:
+                0 0 10px currentColor,
+                0 0 20px currentColor,
+                0 0 40px rgba(249, 115, 22, 0.5),
+                2px 2px 0 rgba(0, 0, 0, 0.8);
+        }
+
+        .stat-card.warning {
+            border-color: var(--wumpa-orange);
+            box-shadow:
+                0 8px 0 rgba(150, 70, 10, 0.8),
+                0 12px 30px rgba(249, 115, 22, 0.3);
+        }
+
+        .stat-card.warning::before {
+            background: linear-gradient(90deg, transparent, var(--wumpa-orange), var(--crash-gold), var(--wumpa-orange), transparent);
+        }
+
+        .stat-card.success .number {
+            color: var(--nitro-green);
+            text-shadow:
+                0 0 10px currentColor,
+                0 0 20px currentColor,
+                0 0 40px rgba(34, 197, 94, 0.5),
+                2px 2px 0 rgba(0, 0, 0, 0.8);
+        }
+
+        .stat-card.success {
+            border-color: var(--nitro-green);
+            box-shadow:
+                0 8px 0 rgba(20, 100, 50, 0.8),
+                0 12px 30px rgba(34, 197, 94, 0.3);
+        }
+
+        .stat-card.success::before {
+            background: linear-gradient(90deg, transparent, var(--nitro-green), #66ff99, var(--nitro-green), transparent);
+        }
+
+        .stat-card .label {
+            color: #b0b0c0;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 0.75rem;
+            font-weight: 700;
+            font-family: 'Bangers', cursive;
+        }
+
+        /* Section Title - Crash Style */
+        .section-title {
+            font-family: 'Bungee', cursive;
+            font-size: 2.2rem;
+            background: linear-gradient(180deg, var(--crash-gold) 0%, var(--crash-orange) 50%, #ff4500 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 2.5rem 0 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+            filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.5));
+            letter-spacing: 2px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 4px;
+            background: linear-gradient(90deg, var(--crash-orange), var(--crash-gold) 30%, transparent);
+            margin-left: 1rem;
+            border-radius: 2px;
+        }
+
+        .section-title .title-icon {
+            font-size: 3rem;
+            animation: iconBounce 2s ease-in-out infinite;
+            filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.5));
+        }
+
+        @keyframes iconBounce {
+
+            0%,
+            100% {
+                transform: scale(1) rotate(-5deg);
+            }
+
+            25% {
+                transform: scale(1.1) rotate(0deg);
+            }
+
+            50% {
+                transform: scale(1) rotate(5deg);
+            }
+
+            75% {
+                transform: scale(1.05) rotate(0deg);
+            }
+        }
+
+        /* Islands Grid - Like Level Select */
+        .islands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.8rem;
+            margin-bottom: 3rem;
+            perspective: 1000px;
+        }
+
+        .island-card {
+            background: linear-gradient(180deg, rgba(34, 197, 94, 0.2) 0%, rgba(6, 182, 212, 0.15) 50%, rgba(20, 20, 50, 0.95) 100%);
+            border: 4px solid rgba(34, 197, 94, 0.5);
+            border-radius: 25px;
+            padding: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow:
+                0 10px 0 rgba(20, 100, 50, 0.6),
+                0 15px 40px rgba(0, 0, 0, 0.5),
+                inset 0 2px 0 rgba(255, 255, 255, 0.1);
+            transform-style: preserve-3d;
+        }
+
+        .island-card::before {
+            content: '🌴';
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 2rem;
+            opacity: 0.3;
+            animation: palmSway 4s ease-in-out infinite;
+        }
+
+        @keyframes palmSway {
+
+            0%,
+            100% {
+                transform: rotate(-5deg);
+            }
+
+            50% {
+                transform: rotate(5deg);
+            }
+        }
+
+        .island-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60%;
+            background: linear-gradient(0deg, rgba(0, 50, 100, 0.3) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .island-card:hover {
+            transform: translateY(-15px) rotateX(5deg) scale(1.03);
+            border-color: var(--crash-gold);
+            box-shadow:
+                0 20px 0 rgba(20, 100, 50, 0.4),
+                0 30px 60px rgba(34, 197, 94, 0.4),
+                0 0 40px rgba(255, 215, 0, 0.3),
+                inset 0 2px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .island-card.has-vulns {
+            background: linear-gradient(180deg, rgba(220, 38, 38, 0.25) 0%, rgba(249, 115, 22, 0.15) 50%, rgba(40, 15, 15, 0.95) 100%);
+            border-color: rgba(220, 38, 38, 0.7);
+            box-shadow:
+                0 10px 0 rgba(100, 20, 20, 0.6),
+                0 15px 40px rgba(220, 38, 38, 0.3);
+        }
+
+        .island-card.has-vulns::before {
+            content: '💀';
+            animation: skullBob 1s ease-in-out infinite;
+        }
+
+        @keyframes skullBob {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .island-card.has-vulns:hover {
+            box-shadow:
+                0 20px 0 rgba(100, 20, 20, 0.4),
+                0 30px 60px rgba(220, 38, 38, 0.5),
+                0 0 40px rgba(255, 100, 100, 0.3);
+        }
+
+        .island-header {
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100%);
+            padding: 1.5rem 1.5rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: relative;
+            z-index: 1;
+        }
+
+        .island-icon {
+            font-size: 3.5rem;
+            animation: islandFloat 4s ease-in-out infinite;
+            filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.5));
+        }
+
+        @keyframes islandFloat {
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(-5deg);
+            }
+
+            25% {
+                transform: translateY(-5px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-10px) rotate(5deg);
+            }
+
+            75% {
+                transform: translateY(-5px) rotate(0deg);
+            }
+        }
+
+        .island-status {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.5rem;
+        }
+
+        .status-badge {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.55rem;
+            padding: 0.5rem 0.9rem;
+            border-radius: 8px;
+            text-transform: uppercase;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+            letter-spacing: 1px;
+        }
+
+        .status-badge.safe {
+            background: linear-gradient(180deg, #4ade80 0%, var(--nitro-green) 100%);
+            color: black;
+            border: 2px solid #66ff99;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        .status-badge.danger {
+            background: linear-gradient(180deg, #ff4444 0%, var(--tnt-red) 100%);
+            color: white;
+            border: 2px solid #ff6666;
+            animation: dangerPulse 1s ease-in-out infinite;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes dangerPulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3), 0 0 10px rgba(255, 0, 0, 0.5);
+            }
+
+            50% {
+                opacity: 0.85;
+                box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 0, 0, 0.8);
+            }
+        }
+
+        .island-body {
+            padding: 0 1.5rem 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .island-name {
+            font-family: 'Bangers', cursive;
+            font-size: 1.5rem;
+            color: var(--crash-gold);
+            margin-bottom: 0.3rem;
+            word-break: break-all;
+            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+            letter-spacing: 1px;
+        }
+
+        .island-ip {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.6rem;
+            color: var(--crash-blue);
+            margin-bottom: 1rem;
+        }
+
+        .island-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .island-stat {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 0.6rem;
+            text-align: center;
+        }
+
+        .island-stat .value {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9rem;
+            color: var(--crash-blue);
+        }
+
+        .island-stat .label {
+            font-size: 0.65rem;
+            color: #888;
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+        }
+
+        .island-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tag {
+            font-size: 0.7rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 5px;
+            background: rgba(139, 92, 246, 0.3);
+            color: #c4b5fd;
+            border: 1px solid rgba(139, 92, 246, 0.5);
+        }
+
+        .tag.port {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--crash-blue);
+            border-color: rgba(0, 212, 255, 0.4);
+        }
+
+        .tag.cve {
+            background: rgba(220, 38, 38, 0.2);
+            color: #fca5a5;
+            border-color: rgba(220, 38, 38, 0.4);
+        }
+
+        /* TNT/Nitro Crate Style Cards for Vulnerabilities */
+        .crates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 1.8rem;
+            margin-bottom: 3rem;
+            perspective: 1000px;
+        }
+
+        .crate-card {
+            background: linear-gradient(180deg, rgba(220, 38, 38, 0.25) 0%, rgba(100, 20, 20, 0.4) 50%, rgba(30, 10, 10, 0.95) 100%);
+            border: 5px solid var(--tnt-red);
+            border-radius: 18px;
+            padding: 0;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow:
+                0 8px 0 rgba(120, 20, 20, 0.8),
+                0 12px 30px rgba(220, 38, 38, 0.4),
+                inset 0 2px 0 rgba(255, 100, 100, 0.2),
+                inset 0 -3px 0 rgba(0, 0, 0, 0.3);
+            transform-style: preserve-3d;
+        }
+
+        /* Wood grain texture overlay */
+        .crate-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                repeating-linear-gradient(90deg,
+                    transparent,
+                    transparent 20px,
+                    rgba(139, 90, 43, 0.1) 20px,
+                    rgba(139, 90, 43, 0.1) 22px),
+                repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 30px,
+                    rgba(0, 0, 0, 0.1) 30px,
+                    rgba(0, 0, 0, 0.1) 32px);
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .crate-card::before {
+            content: 'TNT';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            color: var(--crash-gold);
+            opacity: 0.6;
+            text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+            z-index: 2;
+        }
+
+        .crate-card.critical {
+            border-color: #ff0040;
+            background: linear-gradient(180deg, rgba(255, 0, 64, 0.3) 0%, rgba(150, 0, 30, 0.4) 50%, rgba(50, 0, 10, 0.95) 100%);
+            animation: criticalShake 0.5s ease-in-out infinite;
+        }
+
+        .crate-card.critical::before {
+            content: '💀 TNT';
+            color: #ff4466;
+            opacity: 0.9;
+            animation: criticalBlink 0.8s ease-in-out infinite;
+        }
+
+        @keyframes criticalShake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-2px);
+            }
+
+            75% {
+                transform: translateX(2px);
+            }
+        }
+
+        @keyframes criticalBlink {
+
+            0%,
+            100% {
+                opacity: 0.9;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .crate-card.high {
+            border-color: var(--tnt-red);
+        }
+
+        .crate-card.medium {
+            border-color: var(--nitro-green);
+            background: linear-gradient(180deg, rgba(34, 197, 94, 0.25) 0%, rgba(20, 100, 50, 0.4) 50%, rgba(10, 40, 20, 0.95) 100%);
+            box-shadow:
+                0 8px 0 rgba(20, 80, 40, 0.8),
+                0 12px 30px rgba(34, 197, 94, 0.4),
+                inset 0 2px 0 rgba(100, 255, 150, 0.2);
+        }
+
+        .crate-card.medium::before {
+            content: '⚠️ NITRO';
+            color: var(--nitro-green);
+        }
+
+        .crate-card.low {
+            border-color: var(--crash-blue);
+            background: linear-gradient(180deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 100, 150, 0.3) 50%, rgba(10, 30, 50, 0.95) 100%);
+            box-shadow:
+                0 8px 0 rgba(0, 80, 120, 0.8),
+                0 12px 30px rgba(0, 212, 255, 0.3),
+                inset 0 2px 0 rgba(100, 200, 255, 0.2);
+        }
+
+        .crate-card.low::before {
+            content: '📦 CRATE';
+            color: var(--crash-blue);
+        }
+
+        .crate-card:hover {
+            transform: translateY(-10px) rotateX(3deg) scale(1.02);
+            box-shadow:
+                0 18px 0 rgba(120, 20, 20, 0.5),
+                0 25px 50px rgba(220, 38, 38, 0.5),
+                0 0 30px rgba(255, 50, 50, 0.3);
+        }
+
+        .crate-card.medium:hover {
+            box-shadow:
+                0 18px 0 rgba(20, 80, 40, 0.5),
+                0 25px 50px rgba(34, 197, 94, 0.5),
+                0 0 30px rgba(50, 255, 100, 0.3);
+        }
+
+        .crate-card.low:hover {
+            box-shadow:
+                0 18px 0 rgba(0, 80, 120, 0.5),
+                0 25px 50px rgba(0, 212, 255, 0.5),
+                0 0 30px rgba(50, 200, 255, 0.3);
+        }
+
+        .crate-header {
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 50%, transparent 100%);
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .crate-id {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            color: var(--crash-gold);
+            text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .crate-severity {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            text-transform: uppercase;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.4);
+            letter-spacing: 1px;
+        }
+
+        .crate-severity.critical {
+            background: linear-gradient(180deg, #ff3366 0%, #ff0040 100%);
+            color: white;
+            animation: severityPulse 0.6s ease-in-out infinite;
+            border: 2px solid #ff6688;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes severityPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 3px 0 rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 0, 64, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 3px 0 rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 0, 64, 0.8);
+            }
+        }
+
+        .crate-severity.high {
+            background: linear-gradient(180deg, #ff5555 0%, var(--tnt-red) 100%);
+            color: white;
+            border: 2px solid #ff7777;
+        }
+
+        .crate-severity.medium {
+            background: linear-gradient(180deg, #4ade80 0%, var(--nitro-green) 100%);
+            color: black;
+            border: 2px solid #66ff99;
+        }
+
+        .crate-severity.low {
+            background: linear-gradient(180deg, #22d3ee 0%, var(--crash-blue) 100%);
+            color: black;
+            border: 2px solid #66ffff;
+        }
+
+        .crate-body {
+            padding: 0 1.5rem 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .crate-target {
+            font-size: 0.9rem;
+            color: #bbb;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .crate-target .hostname {
+            color: var(--crash-blue);
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .crate-desc {
+            font-size: 0.9rem;
+            color: #ddd;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            max-height: 4.8em;
+            overflow: hidden;
+        }
+
+        .crate-meta {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            font-size: 0.8rem;
+        }
+
+        .crate-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            color: #999;
+        }
+
+        .crate-meta .cvss {
+            color: var(--crash-gold);
+        }
+
+        .crate-meta .epss {
+            color: var(--crash-purple);
+        }
+
+        .crate-meta .kev {
+            color: var(--tnt-red);
+            font-weight: bold;
+        }
+
+        /* Empty State */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem 2rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+        }
+
+        .empty-state .icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+
+        .empty-state h3 {
+            font-family: 'Bangers', cursive;
+            font-size: 1.8rem;
+            color: var(--crash-gold);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: #888;
+            font-size: 1rem;
+        }
+
+        /* Loading State */
+        .loading {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem;
+        }
+
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            position: relative;
+        }
+
+        .loading-spinner::before {
+            content: '🌀';
+            font-size: 4rem;
+            animation: spin 1s linear infinite;
+            display: block;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading p {
+            font-family: 'Bangers', cursive;
+            font-size: 1.5rem;
+            color: var(--crash-blue);
+        }
+
+        /* Detail Modal - Crash Style */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(180deg, #1a0a3e 0%, #0a0015 100%);
+            border: 4px solid var(--crash-orange);
+            border-radius: 20px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 0 60px rgba(255, 107, 0, 0.3);
+        }
+
+        .modal-header {
+            background: linear-gradient(180deg, rgba(255, 107, 0, 0.3) 0%, transparent 100%);
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid var(--crash-orange);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .modal-title {
+            font-family: 'Bungee', cursive;
+            font-size: 1.5rem;
+            color: var(--crash-gold);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .modal-close {
+            background: var(--tnt-red);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .modal-close:hover {
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .detail-section {
+            margin-bottom: 2rem;
+        }
+
+        .detail-section h4 {
+            font-family: 'Bangers', cursive;
+            font-size: 1.3rem;
+            color: var(--crash-blue);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .detail-item {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .detail-item .label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .detail-item .value {
+            font-size: 1rem;
+            color: var(--crash-gold);
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .port-list,
+        .hostname-list,
+        .cve-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .port-item {
+            background: linear-gradient(180deg, var(--crash-blue), #0099cc);
+            color: black;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.6rem;
+        }
+
+        .hostname-item {
+            background: rgba(139, 92, 246, 0.3);
+            color: #c4b5fd;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            border: 1px solid rgba(139, 92, 246, 0.5);
+        }
+
+        .cve-item {
+            background: rgba(220, 38, 38, 0.2);
+            border: 2px solid var(--tnt-red);
+            padding: 1rem;
+            border-radius: 10px;
+            width: 100%;
+        }
+
+        .cve-item.critical {
+            border-color: #ff0040;
+            background: rgba(255, 0, 64, 0.15);
+        }
+
+        .cve-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .cve-item-id {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            color: var(--crash-gold);
+        }
+
+        .cve-item-desc {
+            font-size: 0.85rem;
+            color: #ccc;
+            line-height: 1.5;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
+            margin-top: 2rem;
+        }
+
+        .footer p {
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .footer a {
+            color: var(--crash-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-mascot {
+            font-size: 4rem;
+            opacity: 0.3;
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .stats-bar {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .logo {
+                font-size: 1.5rem;
+            }
+
+            .scan-selector-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .scan-selector select {
+                min-width: 100%;
+            }
+
+            .islands-grid,
+            .crates-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wumpa-bg" id="wumpaBg"></div>
+    <div class="stars"></div>
+
+    <header class="header">
+        <div class="logo">
+            <span class="crash-icon">🏝️</span>
+            Twin<span>Sanity</span> Island
+        </div>
+        <div class="nav-buttons">
+            <button class="crash-btn blue" onclick="window.location.href='/'">⬅️ Dashboard</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Scan Info Banner -->
+        <div class="scan-info-banner">
+            <div class="scan-info-content">
+                <div class="scan-selector-row">
+                    <div class="scan-selector">
+                        <h2>🎮 Select Mission</h2>
+                    </div>
+                    <select id="scanSelect" onchange="loadScan(this.value)">
+                        <option value="">-- Choose a completed scan --</option>
+                    </select>
+                </div>
+                <div class="scan-meta" id="scanMeta">
+                    <div class="scan-meta-item">
+                        <span class="icon">🎯</span>
+                        <span>Target: </span>
+                        <span class="value" id="metaDomain">-</span>
+                    </div>
+                    <div class="scan-meta-item">
+                        <span class="icon">📅</span>
+                        <span>Scanned: </span>
+                        <span class="value" id="metaDate">-</span>
+                    </div>
+                    <div class="scan-meta-item">
+                        <span class="icon">⏱️</span>
+                        <span>Status: </span>
+                        <span class="value" id="metaStatus">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <span class="icon">🏝️</span>
+                <div class="number" id="statHosts">0</div>
+                <div class="label">Islands</div>
+            </div>
+            <div class="stat-card">
+                <span class="icon">🚪</span>
+                <div class="number" id="statPorts">0</div>
+                <div class="label">Open Ports</div>
+            </div>
+            <div class="stat-card warning">
+                <span class="icon">💣</span>
+                <div class="number" id="statCves">0</div>
+                <div class="label">CVEs Found</div>
+            </div>
+            <div class="stat-card critical">
+                <span class="icon">🔥</span>
+                <div class="number" id="statCritical">0</div>
+                <div class="label">Critical</div>
+            </div>
+            <div class="stat-card success">
+                <span class="icon">✅</span>
+                <div class="number" id="statClean">0</div>
+                <div class="label">Clean Hosts</div>
+            </div>
+        </div>
+
+        <!-- Islands Section -->
+        <h2 class="section-title">
+            <span class="title-icon">🏝️</span>
+            Discovered Islands
+        </h2>
+        <div id="islandsContainer" class="islands-grid">
+            <div class="empty-state">
+                <div class="icon">🏝️</div>
+                <h3>No Islands Discovered Yet!</h3>
+                <p>Select a scan above to explore your findings as tropical islands!</p>
+            </div>
+        </div>
+
+        <!-- CVE Crates Section -->
+        <h2 class="section-title">
+            <span class="title-icon">💣</span>
+            TNT Crates (Vulnerabilities)
+        </h2>
+        <div id="cratesContainer" class="crates-grid">
+            <div class="empty-state">
+                <div class="icon">✅</div>
+                <h3>No TNT Crates Found!</h3>
+                <p>Your islands are safe... no explosives detected!</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-mascot">🦊</div>
+            <p>🎮 TwinSanity Island View - Crash Bandicoot Style Security Visualization</p>
+            <p><a href="/">← Return to the main dashboard for scanning</a></p>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="islandModal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title"><span>🏝️</span> <span id="modalTitle">Island Details</span></h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Content populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generate floating Wumpa fruits and crystals - Crash Twinsanity style
+        function generateWumpaFruits() {
+            const container = document.getElementById('wumpaBg');
+            // Authentic Crash items: Wumpa fruit, crystals, gems, Aku Aku, TNT
+            const fruits = ['🍊', '🍎', '💎', '💜', '⭐', '🌟', '✨', '🔶', '🔷'];
+
+            // Generate more Wumpa fruits
+            for (let i = 0; i < 20; i++) {
+                const fruit = document.createElement('div');
+                fruit.className = 'wumpa-fruit';
+                fruit.textContent = fruits[Math.floor(Math.random() * fruits.length)];
+                fruit.style.left = Math.random() * 100 + '%';
+                fruit.style.animationDelay = Math.random() * 25 + 's';
+                fruit.style.animationDuration = (18 + Math.random() * 12) + 's';
+                fruit.style.fontSize = (1.5 + Math.random() * 1.5) + 'rem';
+                container.appendChild(fruit);
+            }
+
+            // Generate crystal particles
+            for (let i = 0; i < 12; i++) {
+                const crystal = document.createElement('div');
+                crystal.className = 'crystal-particle';
+                crystal.style.left = Math.random() * 100 + '%';
+                crystal.style.animationDelay = Math.random() * 20 + 's';
+                crystal.style.animationDuration = (12 + Math.random() * 8) + 's';
+                // Randomize crystal colors
+                const colors = [
+                    'linear-gradient(180deg, #8b5cf6, #6366f1)',
+                    'linear-gradient(180deg, #00d4ff, #0088cc)',
+                    'linear-gradient(180deg, #ffd700, #ff6b00)',
+                    'linear-gradient(180deg, #22c55e, #16a34a)'
+                ];
+                crystal.style.background = colors[Math.floor(Math.random() * colors.length)];
+                container.appendChild(crystal);
+            }
+        }
+
+        generateWumpaFruits();
+
+        // Load available scans on page load
+        document.addEventListener('DOMContentLoaded', loadScans);
+
+        async function loadScans() {
+            try {
+                const response = await fetch('/api/scans');
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        alert('Please log in first');
+                        window.location.href = '/login';
+                        return;
+                    }
+                    throw new Error('Failed to load scans');
+                }
+
+                const scans = await response.json();
+                const select = document.getElementById('scanSelect');
+                const scanList = Array.isArray(scans) ? scans : (scans.scans || []);
+
+                scanList.forEach(scan => {
+                    const opt = document.createElement('option');
+                    opt.value = scan.id;
+                    const date = scan.created_at ? new Date(scan.created_at).toLocaleDateString() : 'Unknown';
+                    const domain = scan.domain || scan.config?.domain || 'Unknown';
+                    const status = scan.status || 'unknown';
+                    opt.textContent = `🎯 ${domain} - ${date} [${status}]`;
+                    select.appendChild(opt);
+                });
+
+                // Auto-load first scan
+                if (scanList.length > 0) {
+                    select.value = scanList[0].id;
+                    loadScan(scanList[0].id);
+                }
+            } catch (error) {
+                console.error('Error loading scans:', error);
+            }
+        }
+
+        // Global storage for current scan data
+        let currentScanData = null;
+        let currentHosts = null;
+
+        async function loadScan(scanId) {
+            if (!scanId) return;
+
+            // Show loading
+            document.getElementById('islandsContainer').innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Exploring islands...</p>
+                </div>
+            `;
+            document.getElementById('cratesContainer').innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Scanning for TNT crates...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`/api/scans/${scanId}/full`);
+                if (!response.ok) throw new Error('Failed to load scan');
+
+                const data = await response.json();
+                currentScanData = data;
+
+                console.log('Loaded scan data:', data);
+
+                // Update scan metadata
+                updateScanMeta(data);
+
+                // Parse hosts from the results
+                currentHosts = parseHostsFromResults(data);
+
+                console.log('Parsed hosts:', currentHosts);
+
+                renderIslands(currentHosts);
+                renderCrates(currentHosts);
+                updateStats(currentHosts);
+
+            } catch (error) {
+                console.error('Error loading scan:', error);
+                document.getElementById('islandsContainer').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">❌</div>
+                        <h3>Failed to Load Mission!</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+                document.getElementById('cratesContainer').innerHTML = '';
+            }
+        }
+
+        function updateScanMeta(data) {
+            const domain = data.domain || data.config?.domain || data.scan_info?.domain || '-';
+            const date = data.created_at || data.scan_info?.started_at;
+            const status = data.status || 'completed';
+
+            document.getElementById('metaDomain').textContent = domain;
+            document.getElementById('metaDate').textContent = date ? new Date(date).toLocaleString() : '-';
+            document.getElementById('metaStatus').textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        }
+
+        // Parse hosts from scan results - handles multiple data structures
+        function parseHostsFromResults(data) {
+            const hosts = {};
+            const results = data.results || data;
+
+            if (!results || typeof results !== 'object') {
+                return hosts;
+            }
+
+            // Check for old format: data.results.hosts
+            if (results.hosts && typeof results.hosts === 'object' && !Array.isArray(results.hosts)) {
+                return results.hosts;
+            }
+
+            // New format: results has IPs as keys
+            Object.entries(results).forEach(([key, value]) => {
+                // Skip metadata keys
+                if (key.startsWith('_') || key === 'metadata' || key === 'scan_info' || key === 'id') {
+                    return;
+                }
+
+                // Check if this is an IP-based entry
+                if (value && typeof value === 'object' && (value.ip || value.hosts || value.internetdb)) {
+                    const ip = value.ip || key;
+                    const hostnames = value.hosts || [];
+                    const internetdb = value.internetdb || {};
+                    const internetdbData = internetdb.data || internetdb; // Handle nested data structure
+                    const cveDetails = value.cve_details || [];
+
+                    const displayName = (hostnames.length > 0 ? hostnames[0] : ip);
+
+                    hosts[displayName] = {
+                        ip: ip,
+                        hostnames: hostnames,
+                        ports: internetdbData.ports || internetdb.ports || [],
+                        cpes: internetdbData.cpes || internetdb.cpes || [],
+                        vulns: internetdbData.vulns || internetdb.vulns || [],
+                        cve_details: cveDetails,
+                        tags: internetdbData.tags || internetdb.tags || [],
+                        cves: cveDetails.map(cve => ({
+                            id: cve.id || cve.cve_id || 'UNKNOWN',
+                            severity: cve.severity || getSeverityFromCvss(cve.cvss),
+                            cvss: cve.cvss,
+                            summary: cve.summary || cve.description || 'No description available',
+                            epss_score: cve.epss_score,
+                            is_kev: cve.is_kev
+                        }))
+                    };
+                }
+            });
+
+            return hosts;
+        }
+
+        function getSeverityFromCvss(cvss) {
+            if (!cvss) return 'medium';
+            const score = parseFloat(cvss);
+            if (score >= 9.0) return 'critical';
+            if (score >= 7.0) return 'high';
+            if (score >= 4.0) return 'medium';
+            return 'low';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function renderIslands(hosts) {
+            const container = document.getElementById('islandsContainer');
+            const hostEntries = Object.entries(hosts);
+
+            if (hostEntries.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🏝️</div>
+                        <h3>No Islands Found in This Scan!</h3>
+                        <p>Try a different scan or start a new reconnaissance mission.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = hostEntries.map(([hostname, data]) => {
+                const cveCount = data.cves?.length || 0;
+                const ports = data.ports || [];
+                const portCount = ports.length;
+                const hasVulns = cveCount > 0;
+                const hostCount = data.hostnames?.length || 0;
+
+                // Determine icon based on characteristics
+                let icon = '🏝️';
+                if (ports.includes(80) || ports.includes(443)) icon = '🌋';
+                if (ports.includes(3306) || ports.includes(5432) || ports.includes(27017)) icon = '💎';
+                if (ports.includes(22) || ports.includes(3389)) icon = '🗿';
+                if (ports.includes(21)) icon = '📦';
+                if (ports.includes(25) || ports.includes(587)) icon = '📬';
+                if (hasVulns) icon = '🔥';
+
+                const hasCritical = data.cves?.some(c => c.severity === 'critical');
+                if (hasCritical) icon = '💀';
+
+                const escapedHostname = hostname.replace(/'/g, "\\'").replace(/"/g, '\\"');
+
+                // Get top ports for display
+                const topPorts = ports.slice(0, 5);
+
+                return `
+                    <div class="island-card ${hasVulns ? 'has-vulns' : ''}" onclick="showIslandDetails('${escapedHostname}')">
+                        <div class="island-header">
+                            <div class="island-icon">${icon}</div>
+                            <div class="island-status">
+                                ${hasVulns
+                        ? `<span class="status-badge danger">${cveCount} CVE${cveCount > 1 ? 's' : ''}</span>`
+                        : '<span class="status-badge safe">SAFE</span>'
+                    }
+                                ${hasCritical ? '<span class="status-badge danger" style="background:#ff0040;">CRITICAL</span>' : ''}
+                            </div>
+                        </div>
+                        <div class="island-body">
+                            <div class="island-name">${escapeHtml(hostname)}</div>
+                            <div class="island-ip">IP: ${escapeHtml(data.ip || 'N/A')}</div>
+                            
+                            <div class="island-stats">
+                                <div class="island-stat">
+                                    <div class="value">${portCount}</div>
+                                    <div class="label">Ports</div>
+                                </div>
+                                <div class="island-stat">
+                                    <div class="value">${hostCount}</div>
+                                    <div class="label">Hosts</div>
+                                </div>
+                                <div class="island-stat">
+                                    <div class="value">${cveCount}</div>
+                                    <div class="label">CVEs</div>
+                                </div>
+                            </div>
+                            
+                            <div class="island-tags">
+                                ${topPorts.map(p => `<span class="tag port">:${p}</span>`).join('')}
+                                ${ports.length > 5 ? `<span class="tag">+${ports.length - 5} more</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderCrates(hosts) {
+            const container = document.getElementById('cratesContainer');
+            const allCves = [];
+
+            Object.entries(hosts).forEach(([hostname, data]) => {
+                if (data.cves && data.cves.length > 0) {
+                    data.cves.forEach(cve => {
+                        allCves.push({
+                            id: cve.id || cve.cve_id || 'UNKNOWN',
+                            severity: (cve.severity || 'medium').toLowerCase(),
+                            cvss: cve.cvss,
+                            hostname: hostname,
+                            ip: data.ip,
+                            description: cve.summary || cve.description || 'No description available',
+                            epss_score: cve.epss_score,
+                            is_kev: cve.is_kev
+                        });
+                    });
+                }
+            });
+
+            if (allCves.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">✅</div>
+                        <h3>No TNT Crates Found!</h3>
+                        <p>All islands appear to be safe from vulnerabilities!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort by severity
+            const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+            allCves.sort((a, b) => (severityOrder[a.severity] || 4) - (severityOrder[b.severity] || 4));
+
+            container.innerHTML = allCves.slice(0, 50).map(cve => `
+                <div class="crate-card ${cve.severity}">
+                    <div class="crate-header">
+                        <span class="crate-id">💣 ${escapeHtml(cve.id)}</span>
+                        <span class="crate-severity ${cve.severity}">${cve.severity}</span>
+                    </div>
+                    <div class="crate-body">
+                        <div class="crate-target">
+                            🎯 Target: <span class="hostname">${escapeHtml(cve.hostname)}</span> 
+                            (${escapeHtml(cve.ip || '')})
+                        </div>
+                        <div class="crate-desc">${escapeHtml(cve.description.substring(0, 200))}${cve.description.length > 200 ? '...' : ''}</div>
+                        <div class="crate-meta">
+                            ${cve.cvss ? `<span class="cvss">📊 CVSS: ${cve.cvss}</span>` : ''}
+                            ${cve.epss_score ? `<span class="epss">📈 EPSS: ${(cve.epss_score * 100).toFixed(1)}%</span>` : ''}
+                            ${cve.is_kev ? `<span class="kev">⚠️ KEV</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStats(hosts) {
+            const hostEntries = Object.entries(hosts);
+            let totalPorts = 0;
+            let totalCves = 0;
+            let criticalCves = 0;
+            let cleanHosts = 0;
+
+            hostEntries.forEach(([_, data]) => {
+                totalPorts += data.ports?.length || 0;
+
+                if (data.cves && data.cves.length > 0) {
+                    totalCves += data.cves.length;
+                    data.cves.forEach(cve => {
+                        if ((cve.severity || '').toLowerCase() === 'critical') criticalCves++;
+                    });
+                } else {
+                    cleanHosts++;
+                }
+            });
+
+            animateNumber('statHosts', hostEntries.length);
+            animateNumber('statPorts', totalPorts);
+            animateNumber('statCves', totalCves);
+            animateNumber('statCritical', criticalCves);
+            animateNumber('statClean', cleanHosts);
+        }
+
+        function animateNumber(elementId, target) {
+            const el = document.getElementById(elementId);
+            const duration = 1000;
+            const start = parseInt(el.textContent) || 0;
+            const startTime = performance.now();
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                const current = Math.floor(start + (target - start) * easeProgress);
+                el.textContent = current;
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        function showIslandDetails(hostname) {
+            const data = currentHosts[hostname];
+
+            if (!data) {
+                alert(`Island "${hostname}" not found!`);
+                return;
+            }
+
+            document.getElementById('modalTitle').textContent = hostname;
+
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div class="detail-section">
+                    <h4>📍 Basic Information</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="label">IP Address</div>
+                            <div class="value">${escapeHtml(data.ip || 'N/A')}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="label">Open Ports</div>
+                            <div class="value">${data.ports?.length || 0}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="label">Hostnames</div>
+                            <div class="value">${data.hostnames?.length || 1}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="label">CVEs Found</div>
+                            <div class="value" style="color: ${data.cves?.length > 0 ? 'var(--tnt-red)' : 'var(--nitro-green)'}">${data.cves?.length || 0}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                ${data.ports && data.ports.length > 0 ? `
+                <div class="detail-section">
+                    <h4>🚪 Open Ports (${data.ports.length})</h4>
+                    <div class="port-list">
+                        ${data.ports.map(p => `<span class="port-item">${p}</span>`).join('')}
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${data.hostnames && data.hostnames.length > 1 ? `
+                <div class="detail-section">
+                    <h4>🌐 Associated Hostnames (${data.hostnames.length})</h4>
+                    <div class="hostname-list">
+                        ${data.hostnames.map(h => `<span class="hostname-item">${escapeHtml(h)}</span>`).join('')}
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${data.cves && data.cves.length > 0 ? `
+                <div class="detail-section">
+                    <h4>💣 Vulnerabilities (${data.cves.length})</h4>
+                    <div class="cve-list">
+                        ${data.cves.map(cve => `
+                            <div class="cve-item ${cve.severity}">
+                                <div class="cve-item-header">
+                                    <span class="cve-item-id">${escapeHtml(cve.id)}</span>
+                                    <span class="crate-severity ${cve.severity}">${cve.severity}</span>
+                                </div>
+                                <div class="cve-item-desc">${escapeHtml(cve.summary || 'No description')}</div>
+                                <div class="crate-meta" style="margin-top: 0.5rem;">
+                                    ${cve.cvss ? `<span class="cvss">CVSS: ${cve.cvss}</span>` : ''}
+                                    ${cve.epss_score ? `<span class="epss">EPSS: ${(cve.epss_score * 100).toFixed(1)}%</span>` : ''}
+                                    ${cve.is_kev ? `<span class="kev">⚠️ KEV</span>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : `
+                <div class="detail-section">
+                    <h4>✅ Security Status</h4>
+                    <p style="color: var(--nitro-green); font-size: 1.1rem;">No known vulnerabilities detected!</p>
+                </div>
+                `}
+                
+                ${data.tags && data.tags.length > 0 ? `
+                <div class="detail-section">
+                    <h4>🏷️ Tags</h4>
+                    <div class="island-tags">
+                        ${data.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            `;
+
+            document.getElementById('islandModal').classList.add('active');
+        }
+
+        function closeModal(event) {
+            if (!event || event.target.classList.contains('modal-overlay')) {
+                document.getElementById('islandModal').classList.remove('active');
+            }
+        }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+</body>
+
+</html>

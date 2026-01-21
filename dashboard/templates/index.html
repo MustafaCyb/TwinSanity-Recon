@@ -1,0 +1,2231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <title>TwinSanity Recon V2</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+    <link rel="stylesheet" href="/static/css/style.css?v=20260115a">
+</head>
+
+<body>
+    <div class="app has-mission-control">
+        <!-- Mission Control Bar (Top Header) -->
+        <header class="mission-control">
+            <div class="mission-control-logo">
+                <div class="logo-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                        <path d="M2 17l10 5 10-5" />
+                        <path d="M2 12l10 5 10-5" />
+                    </svg>
+                </div>
+                <span class="logo-text">TwinSanity <span
+                        style="color: var(--accent); font-weight: 400;">Recon</span></span>
+            </div>
+
+            <div class="mission-control-scanner">
+                <div class="mc-target-input">
+                    <input type="text" id="mcDomainInput" placeholder="target.com" aria-label="Target Domain">
+                </div>
+
+                <div class="mc-quick-toggles">
+                    <label class="mc-toggle-badge active" data-toggle="subdomains" title="Subdomain Discovery">
+                        <input type="checkbox" id="mcSubdomains" checked hidden>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path
+                                d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                            </path>
+                        </svg>
+                        <span>Subs</span>
+                    </label>
+                    <label class="mc-toggle-badge active" data-toggle="shodan" title="Shodan/InternetDB">
+                        <input type="checkbox" id="mcShodan" checked hidden>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="M21 21l-4.35-4.35"></path>
+                        </svg>
+                        <span>Shodan</span>
+                    </label>
+                    <label class="mc-toggle-badge" data-toggle="ai" title="AI Analysis">
+                        <input type="checkbox" id="mcAI" hidden>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                        </svg>
+                        <span>AI</span>
+                    </label>
+                </div>
+
+                <button type="button" id="mcStartScan" class="mc-scan-btn" onclick="startScanFromMC()">
+                    ⚡ START SCAN
+                </button>
+            </div>
+
+            <div class="mission-control-actions">
+                <!-- Island View (Gamified Mode) -->
+                <a href="/island" class="mc-tools-btn island-mode-btn" title="🎮 TwinSanity Island View - Gamified Mode"
+                    style="text-decoration: none; background: linear-gradient(135deg, #2d004d, #ff0055); border-color: #ffd700;">
+                    🏝️
+                </a>
+
+                <!-- Theme Toggle -->
+                <div class="theme-toggle-container">
+                    <label class="theme-toggle" title="Toggle Light/Dark Mode">
+                        <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
+                        <span class="theme-slider"></span>
+                    </label>
+                </div>
+
+                <!-- More Tools Dropdown -->
+                <button type="button" class="mc-tools-btn" onclick="toggleToolsPanel()" title="Advanced Tools">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Sidebar (Navigation Only) -->
+        <aside class="sidebar">
+            <!-- Navigation Menu -->
+            <nav class="sidebar-nav" style="padding-top: 1rem;">
+                <div class="nav-title">Navigation</div>
+                <button type="button" class="nav-item active" id="navDashboard" onclick="switchView('dashboard')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    Dashboard
+                </button>
+                <button type="button" class="nav-item" id="navShodan" onclick="switchView('shodan')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="M21 21l-4.35-4.35"></path>
+                        <path d="M11 8v6"></path>
+                        <path d="M8 11h6"></path>
+                    </svg>
+                    Shodan Engine
+                </button>
+                <button type="button" class="nav-item hidden" id="navAdmin" onclick="switchView('admin')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    Admin Panel
+                </button>
+            </nav>
+
+            <!-- Advanced Scanner Options (Collapsible) -->
+            <div class="sidebar-content" id="advancedScanOptions">
+                <div class="nav-title" style="cursor: pointer;" onclick="toggleAdvancedOptions()">
+                    <span>⚙️ Advanced Options</span>
+                    <svg class="expand-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <form id="scanForm" class="advanced-options-panel">
+                    <!-- Keep original toggles but hidden in sidebar, synced with MC -->
+                    <input type="hidden" id="domainInput">
+
+                    <div class="toggle-group">
+                        <div class="toggle-row">
+                            <span class="toggle-label">Subdomain Discovery</span>
+                            <label class="toggle">
+                                <input type="checkbox" id="chkSubdomains" checked
+                                    aria-label="Enable subdomain discovery">
+                                <div class="toggle-track">
+                                    <div class="toggle-thumb"></div>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="toggle-row">
+                            <span class="toggle-label">Shodan/InternetDB</span>
+                            <label class="toggle">
+                                <input type="checkbox" id="chkShodan" checked
+                                    aria-label="Enable Shodan/InternetDB lookup">
+                                <div class="toggle-track">
+                                    <div class="toggle-thumb"></div>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="toggle-row">
+                            <span class="toggle-label">CVE Enrichment</span>
+                            <label class="toggle">
+                                <input type="checkbox" id="chkCVE" checked aria-label="Enable CVE enrichment">
+                                <div class="toggle-track">
+                                    <div class="toggle-thumb"></div>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="toggle-row toggle-row-bordered">
+                            <span class="toggle-label toggle-label-flex">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                    stroke="var(--accent-purple)" stroke-width="2">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                                </svg>
+                                AI Analysis
+                            </span>
+                            <label class="toggle">
+                                <input type="checkbox" id="chkAIAnalysis" aria-label="Enable AI analysis">
+                                <div class="toggle-track">
+                                    <div class="toggle-thumb"></div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Bug Bounty Tools Section -->
+                        <div class="toggle-section-divider">Bug Bounty Tools</div>
+                        <div class="toggle-row">
+                            <span class="toggle-label toggle-label-flex has-tooltip">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                </svg>
+                                HTTP Probing
+                                <span class="tooltip-bubble">Check which subdomains are alive and detect
+                                    technologies</span>
+                            </span>
+                            <label class="toggle">
+                                <input type="checkbox" id="chkHttpProbing" aria-label="Enable HTTP probing">
+                                <div class="toggle-track">
+                                    <div class="toggle-thumb"></div>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="toggle-row">
+                            <span class="toggle-label toggle-label-flex has-tooltip">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--warning)"
+                                    stroke-width="2">
+                                    <path
+                                        d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                    <line x1="12" y1="9" x2="12" y2="13" />
+                                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                                </svg>
+                                Vulnerability Scan
+                                <span class="tooltip-bubble">Run Nuclei scanner for known vulnerabilities</span>
+                            </span>
+                            <label class="toggle">
+                                <input type="checkbox" id="chkNucleiScan" aria-label="Enable Nuclei vulnerability scan">
+                                <div class="toggle-track">
+                                    <div class="toggle-thumb"></div>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="toggle-row">
+                            <span class="toggle-label toggle-label-flex has-tooltip">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                    stroke="var(--accent-purple)" stroke-width="2">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                                </svg>
+                                URL Harvesting
+                                <span class="tooltip-bubble">Collect historical URLs from Wayback Machine and
+                                    CommonCrawl</span>
+                            </span>
+                            <label class="toggle">
+                                <input type="checkbox" id="chkUrlHarvesting" aria-label="Enable URL harvesting">
+                                <div class="toggle-track">
+                                    <div class="toggle-thumb"></div>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="toggle-row">
+                            <span class="toggle-label toggle-label-flex has-tooltip">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--danger)"
+                                    stroke-width="2">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                                </svg>
+                                XSS Testing
+                                <span class="tooltip-bubble">Test harvested URLs for XSS vulnerabilities</span>
+                            </span>
+                            <label class="toggle">
+                                <input type="checkbox" id="chkXssScan" aria-label="Enable XSS scanning">
+                                <div class="toggle-track">
+                                    <div class="toggle-thumb"></div>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="toggle-row">
+                            <span class="toggle-label toggle-label-flex has-tooltip">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)"
+                                    stroke-width="2">
+                                    <path
+                                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                </svg>
+                                API Discovery
+                                <span class="tooltip-bubble">Discover hidden API endpoints and OpenAPI specs</span>
+                            </span>
+                            <label class="toggle">
+                                <input type="checkbox" id="chkApiDiscovery" aria-label="Enable API discovery">
+                                <div class="toggle-track">
+                                    <div class="toggle-thumb"></div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="button" class="config-toggle" onclick="toggleConfig()">
+                        <span>Advanced Configuration</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+
+                    <!-- Config Content Omitted for Brevity - Will be preserved by implementation -->
+                    <div id="configContent" class="config-content">
+                        <label class="form-label">Subdomain Sources</label>
+                        <div class="source-grid">
+                            <label class="source-label"><input type="checkbox" name="src_crtsh" checked> crt.sh</label>
+                            <label class="source-label"><input type="checkbox" name="src_hackertarget" checked>
+                                HackerTarget</label>
+                            <label class="source-label"><input type="checkbox" name="src_rapiddns" checked>
+                                RapidDNS</label>
+                            <label class="source-label"><input type="checkbox" name="src_urlscan" checked>
+                                URLScan</label>
+                            <label class="source-label"><input type="checkbox" name="src_webarchive" checked>
+                                WebArchive</label>
+                            <label class="source-label"><input type="checkbox" name="src_bufferover" checked>
+                                BufferOver</label>
+                            <label class="source-label"><input type="checkbox" name="src_certspotter" checked>
+                                CertSpotter</label>
+                        </div>
+
+                        <label class="form-label form-label-mt">CVE Sources</label>
+                        <div class="source-grid">
+                            <label class="source-label"><input type="checkbox" name="cve_circl" checked> CIRCL</label>
+                            <label class="source-label"><input type="checkbox" name="cve_shodan" checked> Shodan</label>
+                            <label class="source-label"><input type="checkbox" name="cve_nvd" checked> NVD</label>
+                            <label class="source-label"><input type="checkbox" name="cve_virustotal" checked>
+                                VirusTotal</label>
+                        </div>
+
+                        <div class="toggle-row toggle-row-mt">
+                            <span class="toggle-label toggle-label-flex has-tooltip">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                                </svg>
+                                Validate DNS
+                                <span class="tooltip-bubble">Filters out stale/parked domains by verifying each
+                                    subdomain resolves to a valid IP address</span>
+                            </span>
+                            <label class="toggle">
+                                <input type="checkbox" id="chkDNS" aria-label="Validate DNS records">
+                                <div class="toggle-track">
+                                    <div class="toggle-thumb"></div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Brute Force and Proxy sections omitted, they are fine inside form -->
+                        <div class="border-top-section">
+                            <div class="toggle-row">
+                                <span class="toggle-label toggle-label-flex">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                        stroke="var(--accent-purple)" stroke-width="2">
+                                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                    </svg>
+                                    Brute Force Discovery
+                                </span>
+                                <label class="toggle">
+                                    <input type="checkbox" id="chkBruteForce" onchange="toggleBruteForceOptions()"
+                                        aria-label="Enable brute force discovery">
+                                    <div class="toggle-track">
+                                        <div class="toggle-thumb"></div>
+                                    </div>
+                                </label>
+                            </div>
+                            <div id="bruteForceOptions" class="options-hidden">
+                                <label class="form-label form-label-sm" for="wordlistSelect">Wordlist Selection</label>
+                                <select id="wordlistSelect" class="form-input form-input-sm"
+                                    aria-label="Wordlist selection">
+                                    <option value="tiny">Tiny (100) - Quick Test</option>
+                                    <option value="small" selected>Small (1K) - Fast</option>
+                                    <option value="medium">Medium (5K) - Balanced</option>
+                                    <option value="large">Large (20K) - Thorough</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="border-top-section">
+                            <div class="toggle-row">
+                                <span class="toggle-label toggle-label-flex">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                        stroke="var(--accent-cyan)" stroke-width="2">
+                                        <circle cx="12" cy="12" r="3" />
+                                        <path
+                                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                                    </svg>
+                                    Use Proxies
+                                </span>
+                                <label class="toggle">
+                                    <input type="checkbox" id="chkProxy" onchange="toggleProxyOptions()"
+                                        aria-label="Enable proxy usage">
+                                    <div class="toggle-track">
+                                        <div class="toggle-thumb"></div>
+                                    </div>
+                                </label>
+                            </div>
+                            <div id="proxyOptions" class="options-hidden">
+                                <label class="form-label form-label-sm">Single Proxy</label>
+                                <div class="input-group-sm">
+                                    <input type="text" id="proxyInput" class="form-input form-input-sm"
+                                        placeholder="host:port">
+                                    <button type="button" class="btn btn-ghost btn-sm" onclick="addSingleProxy()"
+                                        aria-label="Add single proxy">+ Add</button>
+                                </div>
+
+                                <label class="form-label form-label-sm" style="margin-top: 8px;">Bulk Proxy List</label>
+                                <textarea id="proxyListInput" class="form-input form-input-sm" rows="4"
+                                    placeholder="Paste multiple proxies (one per line):&#10;host1:port1&#10;host2:port2&#10;socks5://host3:port3"
+                                    style="resize: vertical; min-height: 60px;"></textarea>
+                                <button type="button" class="btn btn-ghost btn-full-sm" onclick="loadProxyList()"
+                                    aria-label="Load proxy list">
+                                    📋 Load List
+                                </button>
+
+                                <div id="proxyStats" class="proxy-stats hidden"
+                                    style="margin-top: 8px; font-size: 0.8em; color: var(--text-muted);">
+                                    <span id="proxyCount">0</span> proxies loaded
+                                </div>
+
+                                <button type="button" class="btn btn-ghost btn-sm btn-danger-text"
+                                    onclick="clearProxies()" style="margin-top: 6px;">
+                                    Clear All
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btnScan" class="btn btn-primary btn-full btn-mt">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3" />
+                        </svg>
+                        Start Scan
+                    </button>
+                </form>
+            </div>
+
+            <section class="progress-section" aria-label="Scan Progress">
+                <header class="progress-header">
+                    <span class="progress-status" id="statusText">Ready</span>
+                    <span class="progress-percent" id="progressText">0%</span>
+                </header>
+                <figure class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <span class="progress-fill" id="progressFill"></span>
+                </figure>
+            </section>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">
+                        <span id="userInitial">U</span>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Loading...</div>
+                        <div class="user-role" id="userRole">...</div>
+                    </div>
+                    <button class="btn-icon-tiny" onclick="handleLogout()" title="Logout">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            <polyline points="16 17 21 12 16 7" />
+                            <line x1="21" y1="12" x2="9" y2="12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main" id="mainContent">
+            <!-- VIEW: DASHBOARD -->
+            <div id="viewDashboard" class="view-section active">
+                <header class="main-header">
+                    <select id="sessionSelect" class="session-select" title="Select a previous scan session">
+                        <option value="">Select previous scan...</option>
+                    </select>
+                    <div class="connection-status" id="connectionStatus">
+                        <span class="connection-dot"></span>
+                        <span class="connection-text">Ready</span>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-icon" id="btnCveExplorer" onclick="toggleCveExplorer()" title="CVE Explorer">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+                                </path>
+                            </svg>
+                        </button>
+                        <button class="btn-icon" id="btnPublicScans" onclick="togglePublicScans()" title="Public Scans">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="2" y1="12" x2="22" y2="12"></line>
+                                <path
+                                    d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                                </path>
+                            </svg>
+                        </button>
+                        <div class="divider-vertical"></div>
+                        <button class="btn-icon" id="btnNew" title="New Scan">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                        </button>
+                        <button class="btn-icon" id="btnRescan" title="Rescan">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M23 4v6h-6" />
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                            </svg>
+                        </button>
+                        <button class="btn-icon btn-clear-cache" id="btnClearCache" title="Clear Subdomain Cache"
+                            onclick="clearSubdomainCache()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M3 6h18" />
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                <line x1="10" y1="11" x2="10" y2="17" />
+                                <line x1="14" y1="11" x2="14" y2="17" />
+                            </svg>
+                        </button>
+                        <button class="btn-icon" id="btnVisibility" title="Toggle Visibility (Private/Public)" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                        <button class="btn-icon btn-danger" id="btnDelete" title="Delete Session">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path
+                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                <line x1="10" y1="11" x2="10" y2="17" />
+                                <line x1="14" y1="11" x2="14" y2="17" />
+                            </svg>
+                        </button>
+                        <button class="btn-icon btn-icon-ai" id="btnReport" title="Generate Report"
+                            onclick="showReportDialog()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <line x1="16" y1="13" x2="8" y2="13" />
+                                <line x1="16" y1="17" x2="8" y2="17" />
+                                <polyline points="10 9 9 9 8 9" />
+                            </svg>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="empty-state">
+                    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <circle cx="12" cy="12" r="10" />
+                        <path
+                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                        <path d="M2 12h20" />
+                    </svg>
+                    <div class="empty-title">Ready to Scan</div>
+                    <div class="empty-desc">Enter a target domain and start scanning.</div>
+                </div>
+
+                <!-- Results Container -->
+                <div id="resultsContainer" class="hidden">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="statIPs">0</div>
+                            <div class="stat-label">IP Addresses</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statSubs">0</div>
+                            <div class="stat-label">Subdomains</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statCVEs">0</div>
+                            <div class="stat-label">Unique CVEs</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value danger" id="statCrit">0</div>
+                            <div class="stat-label">Critical</div>
+                        </div>
+                    </div>
+
+                    <!-- Report Tabs -->
+                    <div class="report-tabs">
+                        <button class="report-tab active" data-tab="findings" onclick="switchReportTab('findings')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <path d="M14 2v6h6" />
+                                <path d="M16 13H8" />
+                                <path d="M16 17H8" />
+                                <path d="M10 9H8" />
+                            </svg>
+                            Findings Report
+                        </button>
+                        <button class="report-tab" data-tab="ai-report" onclick="switchReportTab('ai-report')"
+                            id="aiReportTab">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                            </svg>
+                            AI Analysis Report
+                            <span id="aiReportBadge" class="ai-badge hidden">NEW</span>
+                        </button>
+                        <button class="report-tab" data-tab="tools-findings" onclick="switchReportTab('tools-findings')"
+                            id="toolsFindingsTab">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                            </svg>
+                            Tools Findings
+                            <span id="toolsFindingsBadge" class="ai-badge hidden">0</span>
+                        </button>
+                    </div>
+
+                    <!-- Findings Report Panel -->
+                    <div id="findingsPanel" class="report-panel">
+                        <div class="content-area">
+                            <div class="charts-row">
+                                <div class="chart-card">
+                                    <div class="chart-title">Vulnerability Severity</div>
+                                    <div class="chart-container"><canvas id="severityChart"></canvas></div>
+                                </div>
+                                <div class="chart-card">
+                                    <div class="chart-title">Top Open Ports</div>
+                                    <div class="chart-container"><canvas id="portsChart"></canvas></div>
+                                </div>
+                            </div>
+
+                            <!-- Discovered Subdomains Section -->
+                            <div class="section subdomains-section">
+                                <div class="section-header">
+                                    <div class="section-title">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <line x1="2" y1="12" x2="22" y2="12" />
+                                            <path
+                                                d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                        </svg>
+                                        Discovered Subdomains
+                                        <span id="subdomainCount" class="count-badge">0</span>
+                                    </div>
+                                    <div class="section-actions">
+                                        <input type="text" id="subdomainSearch" class="filter-input compact"
+                                            placeholder="Filter subdomains...">
+                                        <button id="toggleSubdomains" class="btn-icon" title="Toggle view">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2">
+                                                <polyline points="6 9 12 15 18 9" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="section-content subdomains-grid" id="subdomainsList"></div>
+                            </div>
+
+                            <div class="section">
+                                <div class="section-header">
+                                    <div class="section-title">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                                            <line x1="8" y1="21" x2="16" y2="21" />
+                                            <line x1="12" y1="17" x2="12" y2="21" />
+                                        </svg>
+                                        Discovered Hosts
+                                    </div>
+                                </div>
+                                <div class="section-content" id="hostsList"></div>
+                            </div>
+
+                            <div class="section">
+                                <div class="section-header">
+                                    <div class="section-title">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path
+                                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                            <line x1="12" y1="9" x2="12" y2="13" />
+                                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                                        </svg>
+                                        All Vulnerabilities
+                                    </div>
+                                </div>
+                                <div class="table-filters">
+                                    <input type="text" id="cveSearch" class="filter-input"
+                                        placeholder="Search CVE ID or description...">
+                                    <select id="cveFilter" class="filter-select" title="Filter by severity">
+                                        <option value="">All Severities</option>
+                                        <option value="critical">Critical (9+)</option>
+                                        <option value="high">High (7-8.9)</option>
+                                        <option value="medium">Medium (4-6.9)</option>
+                                        <option value="low">Low (&lt;4)</option>
+                                        <option value="unknown">Unknown Score</option>
+                                    </select>
+                                </div>
+                                <div class="table-scroll">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>CVE ID</th>
+                                                <th>CVSS</th>
+                                                <th>Description</th>
+                                                <th>Affected</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="cveTable"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- End Findings Panel -->
+
+                    <!-- AI Analysis Report Panel -->
+                    <div id="aiReportPanel" class="report-panel hidden">
+                        <div class="content-area ai-report-content-area">
+                            <div id="aiReportEmpty" class="ai-report-empty">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)"
+                                    stroke-width="1" class="ai-empty-icon">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                                </svg>
+                                <h3 class="ai-empty-title">No AI Analysis Available</h3>
+                                <p class="ai-empty-desc">Enable "AI Analysis" in scan options before running a
+                                    scan<br>to get a detailed AI-powered security report.</p>
+                            </div>
+
+                            <div id="aiReportContent" class="hidden">
+                                <div class="ai-report-header ai-report-header-flex">
+                                    <h2 class="ai-report-title">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                            stroke="var(--accent-purple)" stroke-width="2">
+                                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                                        </svg>
+                                        AI Security Analysis Report
+                                    </h2>
+                                    <span id="aiReportMeta" class="ai-report-meta"></span>
+                                </div>
+
+                                <div class="ai-section ai-section-cyan">
+                                    <h3 class="ai-section-title">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="var(--accent-cyan)" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                        </svg>
+                                        Executive Summary
+                                    </h3>
+                                    <div id="aiSummary" class="ai-summary-text"></div>
+                                </div>
+
+                                <div class="ai-section ai-section-danger">
+                                    <h3 class="ai-section-title">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="var(--danger)" stroke-width="2">
+                                            <path
+                                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                        </svg>
+                                        High-Risk Assets
+                                    </h3>
+                                    <div id="aiHighRiskAssets"></div>
+                                </div>
+
+                                <div class="ai-section ai-section-warning">
+                                    <h3 class="ai-section-title">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="var(--warning)" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <path d="M12 8v4" />
+                                            <path d="M12 16h.01" />
+                                        </svg>
+                                        Key Vulnerabilities
+                                    </h3>
+                                    <div id="aiKeyVulns"></div>
+                                </div>
+
+                                <div class="ai-section ai-section-success">
+                                    <h3 class="ai-section-title">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="var(--success)" stroke-width="2">
+                                            <polyline points="9 11 12 14 22 4" />
+                                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                                        </svg>
+                                        Recommended Actions
+                                    </h3>
+                                    <div id="aiActions"></div>
+                                </div>
+
+                                <div class="ai-section ai-section-purple">
+                                    <h3 class="ai-section-title">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="var(--accent-purple)" stroke-width="2">
+                                            <path
+                                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                        </svg>
+                                        All Discovered CVEs (<span id="aiCveCount">0</span>)
+                                    </h3>
+                                    <div id="aiAllCves" class="ai-cve-list"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- End AI Report Panel -->
+
+                    <!-- Tools Findings Panel -->
+                    <div id="toolsFindingsPanel" class="report-panel hidden">
+                        <div class="content-area" style="overflow-y: auto; max-height: calc(100vh - 200px);">
+                            <div id="toolsFindingsEmpty" class="ai-report-empty">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)"
+                                    stroke-width="1">
+                                    <path
+                                        d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                                </svg>
+                                <h3 class="ai-empty-title">No Tool Findings Yet</h3>
+                                <p class="ai-empty-desc">Enable bug bounty tools (HTTP Probing, URL Harvesting, Vuln
+                                    Scan, etc.)<br>to see detailed findings here.</p>
+                            </div>
+
+                            <div id="toolsFindingsContent" class="hidden">
+                                <!-- Alive Hosts Section -->
+                                <div class="ai-section ai-section-cyan">
+                                    <h3 class="ai-section-title">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="var(--accent-cyan)" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                        </svg>
+                                        Alive Hosts (<span id="aliveHostsCount">0</span>)
+                                    </h3>
+                                    <div id="aliveHostsList" class="findings-grid"></div>
+                                </div>
+
+                                <!-- Harvested URLs Section -->
+                                <div class="ai-section">
+                                    <h3 class="ai-section-title">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="var(--accent-purple)" stroke-width="2">
+                                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                                        </svg>
+                                        Harvested URLs (<span id="harvestedUrlsCount">0</span>)
+                                    </h3>
+                                    <div id="harvestedUrlsList" class="findings-list"></div>
+                                </div>
+
+                                <!-- Vulnerabilities Section -->
+                                <div class="ai-section ai-section-danger">
+                                    <h3 class="ai-section-title">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="var(--danger)" stroke-width="2">
+                                            <path
+                                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                            <line x1="12" y1="9" x2="12" y2="13" />
+                                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                                        </svg>
+                                        Vulnerabilities (<span id="nucleiFindingsCount">0</span>)
+                                    </h3>
+                                    <div id="nucleiFindingsList" class="findings-list"></div>
+                                </div>
+
+                                <!-- XSS Findings Section -->
+                                <div class="ai-section ai-section-warning">
+                                    <h3 class="ai-section-title">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="var(--warning)" stroke-width="2">
+                                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                                        </svg>
+                                        XSS Findings (<span id="xssFindingsCount">0</span>)
+                                    </h3>
+                                    <div id="xssFindingsList" class="findings-list"></div>
+                                </div>
+
+                                <!-- API Endpoints Section -->
+                                <div class="ai-section ai-section-success">
+                                    <h3 class="ai-section-title">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="var(--success)" stroke-width="2">
+                                            <path
+                                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                        </svg>
+                                        API Endpoints (<span id="apiEndpointsCount">0</span>)
+                                    </h3>
+                                    <div id="apiEndpointsList" class="findings-list"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- End Tools Findings Panel -->
+                </div> <!-- End resultsContainer -->
+
+                <!-- CVE Explorer Section (Now integrated into Dashboard view context) -->
+                <div id="cveExplorer" class="hidden">
+                    <div class="explorer-header">
+                        <h2 class="section-title">Global Vulnerability Explorer</h2>
+                        <!-- ... (same as before) ... -->
+                        <div class="explorer-controls">
+                            <input type="text" id="globalCveSearch" class="filter-input" placeholder="Search CVEs...">
+                            <button id="btnRefreshCves" class="btn-icon" title="Refresh">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M23 4v6h-6" />
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="cveExplorerGrid" class="cve-grid"></div>
+                </div>
+
+                <div id="publicScansPanel" class="hidden">
+                    <div class="explorer-header">
+                        <h2 class="section-title">Public Scans</h2>
+                        <button id="btnRefreshPublicScans" class="btn-icon" onclick="loadPublicScans()"
+                            aria-label="Refresh public scans" title="Refresh public scans">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" aria-hidden="true">
+                                <path d="M23 4v6h-6" />
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="publicScansGrid" class="public-scans-grid"></div>
+                </div>
+            </div>
+
+            <!-- VIEW: FILES - DISABLED/REMOVED -->
+            <!-- Project Explorer feature has been removed for cleaner UI -->
+
+            <!-- VIEW: ADMIN -->
+            <div id="viewAdmin" class="view-section hidden">
+                <header class="main-header">
+                    <div class="header-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)"
+                            stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                        Admin Dashboard
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-primary btn-sm" onclick="showCreateUserModal()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <line x1="19" y1="8" x2="19" y2="14" />
+                                <line x1="22" y1="11" x2="16" y2="11" />
+                            </svg>
+                            Add User
+                        </button>
+                        <button class="btn-icon" onclick="window.adminPanel && window.adminPanel.loadUsers()"
+                            title="Refresh">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M23 4v6h-6" />
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                            </svg>
+                        </button>
+                    </div>
+                </header>
+                <!-- Admin Panel Content -->
+                <div class="admin-content-area">
+                    <div class="admin-stats-grid">
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-icon users-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                </svg>
+                            </div>
+                            <div class="admin-stat-info">
+                                <span class="admin-stat-value" id="totalUsersCount">0</span>
+                                <span class="admin-stat-label">Total Users</span>
+                            </div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-icon admins-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                </svg>
+                            </div>
+                            <div class="admin-stat-info">
+                                <span class="admin-stat-value" id="totalAdminsCount">0</span>
+                                <span class="admin-stat-label">Admins</span>
+                            </div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-icon scans-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <path
+                                        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div class="admin-stat-info">
+                                <span class="admin-stat-value" id="totalScansCount">0</span>
+                                <span class="admin-stat-label">Total Scans</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-section">
+                        <div class="admin-section-header">
+                            <h3>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                </svg>
+                                User Management
+                            </h3>
+                            <input type="text" id="userSearchInput" class="filter-input compact"
+                                placeholder="Search users..." oninput="filterUsers(this.value)">
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table" id="usersTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
+                                        <th>Role</th>
+                                        <th>Created At</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: SHODAN ENGINE -->
+            <div id="viewShodan" class="view-section hidden">
+                <header class="main-header">
+                    <div class="header-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)"
+                            stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="M21 21l-4.35-4.35"></path>
+                        </svg>
+                        Shodan Intelligence
+                    </div>
+                    <div class="header-actions">
+                        <div class="shodan-plan-badge" id="shodanPlanBadge">
+                            <span id="shodanPlanText">Loading...</span>
+                        </div>
+                        <button class="btn btn-icon" onclick="window.shodanPanel?.refreshStatus()"
+                            title="Refresh Status">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M23 4v6h-6"></path>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </header>
+
+                <div class="shodan-layout">
+                    <!-- Left Panel: Tools -->
+                    <div class="shodan-tools-panel">
+                        <!-- Status Card -->
+                        <div class="shodan-status-card" id="shodanStatusCard">
+                            <div class="status-row">
+                                <div class="status-item">
+                                    <span class="status-value" id="shodanQueryCredits">-</span>
+                                    <span class="status-label">Query Credits</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-value" id="shodanScanCredits">-</span>
+                                    <span class="status-label">Scan Credits</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-value" id="shodanUnlocked">-</span>
+                                    <span class="status-label">Unlocked</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- IP Lookup -->
+                        <div class="shodan-tool-section">
+                            <h4>🔍 IP Lookup</h4>
+                            <div class="tool-input-row">
+                                <input type="text" id="shodanIpInput" class="form-input"
+                                    placeholder="Enter IP address (e.g., 8.8.8.8)">
+                                <button class="btn btn-primary btn-sm"
+                                    onclick="window.shodanPanel?.lookupIP()">Lookup</button>
+                            </div>
+                        </div>
+
+                        <!-- Shodan Search -->
+                        <div class="shodan-tool-section">
+                            <h4>🌐 Shodan Search</h4>
+                            <div class="tool-input-row">
+                                <input type="text" id="shodanSearchInput" class="form-input"
+                                    placeholder="port:22 country:US">
+                                <button class="btn btn-primary btn-sm"
+                                    onclick="window.shodanPanel?.search()">Search</button>
+                            </div>
+                            <div class="tool-hint">
+                                <span class="clickable" onclick="window.shodanPanel?.showFilters()">📋 View search
+                                    filters →</span>
+                            </div>
+                        </div>
+
+                        <!-- DNS Tools -->
+                        <div class="shodan-tool-section">
+                            <h4>🌍 DNS Resolution</h4>
+                            <div class="tool-input-row">
+                                <input type="text" id="shodanDnsInput" class="form-input"
+                                    placeholder="example.com or IP">
+                                <select id="shodanDnsType" class="form-select form-select-sm">
+                                    <option value="resolve">Resolve</option>
+                                    <option value="reverse">Reverse</option>
+                                </select>
+                                <button class="btn btn-secondary btn-sm"
+                                    onclick="window.shodanPanel?.dnsLookup()">Go</button>
+                            </div>
+                        </div>
+
+                        <!-- Exploit Search -->
+                        <div class="shodan-tool-section">
+                            <h4>⚠️ Exploit Search</h4>
+                            <div class="tool-input-row">
+                                <input type="text" id="shodanExploitInput" class="form-input"
+                                    placeholder="CVE-2021-44228 or keyword">
+                                <button class="btn btn-danger btn-sm"
+                                    onclick="window.shodanPanel?.searchExploits()">Search</button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="shodan-quick-actions">
+                            <button class="quick-btn" onclick="window.shodanPanel?.getMyIP()">
+                                <span>📍</span> My IP
+                            </button>
+                            <button class="quick-btn" onclick="window.shodanPanel?.showScanModal()">
+                                <span>📡</span> Scan IPs
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Results -->
+                    <div class="shodan-results-panel" id="shodanResultsPanel">
+                        <div class="results-header">
+                            <h3 id="shodanResultsTitle">Results</h3>
+                            <div class="results-actions">
+                                <button class="btn btn-sm btn-ghost" onclick="window.shodanPanel?.exportResults()"
+                                    title="Export JSON">
+                                    📥 Export
+                                </button>
+                                <button class="btn btn-sm btn-ghost" onclick="window.shodanPanel?.clearResults()"
+                                    title="Clear">
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                        <div class="results-body" id="shodanResultsContent">
+                            <div class="results-placeholder">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)"
+                                    stroke-width="1">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="M21 21l-4.35-4.35"></path>
+                                </svg>
+                                <p>Enter an IP address or search query</p>
+                                <p class="hint">Results will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Chat Panel -->
+        <aside class="chat-panel">
+            <div class="chat-header">
+                <div class="chat-avatar">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                    </svg>
+                </div>
+                <div class="chat-header-text">
+                    <div class="chat-title">AI Security Assistant</div>
+                    <div class="chat-subtitle" id="llmProvider">Select a provider below</div>
+                </div>
+                <button class="btn-icon btn-icon-transparent" id="btnChatSettings" onclick="toggleChatSettings()"
+                    title="AI Settings">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- AI Provider Selector -->
+            <div class="chat-provider-section" id="chatProviderSection">
+                <label class="form-label form-label-sm" for="aiProviderSelect">AI Provider</label>
+                <select id="aiProviderSelect" class="form-input form-input-sm" onchange="onProviderChange()"
+                    title="Select AI provider for chat analysis" aria-label="Select AI Provider">
+                    <option value="local" selected>🏠 Ollama Local (Private)</option>
+                    <option value="ollama_cloud">☁️ Ollama Cloud (Fast)</option>
+                    <option value="gemini">✨ Google Gemini (Free)</option>
+                    <option value="github">🐙 GitHub Models (Free)</option>
+                    <option value="openai">🤖 OpenAI GPT-4 (Paid)</option>
+                    <option value="anthropic">🧠 Claude (Paid)</option>
+                </select>
+                <!-- Old status indicator removed to avoid confusion with new badge -->
+
+                <!-- Dynamic Model Selector (populated from config.yaml via API) -->
+                <div id="providerModelSection" class="provider-model-section"
+                    style="display: none; margin-top: 0.5rem; flex-direction: column; gap: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label class="form-label form-label-sm" for="providerModelSelect" style="margin:0;">Model
+                            Selection</label>
+                        <span id="modelConnectionStatus" class="badge badge-sm"
+                            style="display: none; font-size: 0.7rem; padding: 2px 6px;"></span>
+                    </div>
+                    <select id="providerModelSelect" class="form-input form-input-sm"
+                        title="Select model for this provider" aria-label="Select Model" style="width: 100%;">
+                        <option value="">Loading models...</option>
+                    </select>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="quick-action-btn" onclick="askQuickQuestion('summary')"
+                        title="Get executive summary">
+                        📊 Summary
+                    </button>
+                    <button class="quick-action-btn" onclick="askQuickQuestion('critical')"
+                        title="List critical vulnerabilities">
+                        🔴 Critical
+                    </button>
+                    <button class="quick-action-btn" onclick="askQuickQuestion('remediation')"
+                        title="Get remediation advice">
+                        🛡️ Fix Guide
+                    </button>
+                    <button class="quick-action-btn" onclick="askQuickQuestion('risks')"
+                        title="Identify high-risk assets">
+                        ⚠️ Risks
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai">
+                    <div class="msg-avatar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                    </div>
+                    <div class="msg-content">
+                        Hello! I'm your AI security assistant. Select a provider above to get started.
+                        <br><br>
+                        <strong>Available Providers:</strong>
+                        <br>• <strong>Local</strong> - Private, runs on your machine
+                        <br>• <strong>Ollama Cloud</strong> - Fast cloud inference
+                        <br>• <strong>Gemini</strong> - Google's AI (free tier)
+                        <br>• <strong>GitHub Models</strong> - Free GPT-4o-mini
+                        <br><br>
+                        <em class="chat-empty-text">
+                            💡 Use Quick Actions above for common security questions!
+                        </em>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" class="chat-input" placeholder="Ask about vulnerabilities..."
+                    disabled>
+                <button id="btnSend" class="chat-send" title="Send message" disabled>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13" />
+                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                    </svg>
+                </button>
+            </div>
+        </aside>
+    </div>
+
+    <script src="/static/js/main.js?v=20260115e"></script>
+    <script>
+        // ============================================================
+        // AI Provider Management
+        // ============================================================
+
+        // Handle provider change - dynamically populate model selector
+        let providerModelsCache = null;  // Cache for provider models
+
+        async function loadProviderModels() {
+            try {
+                const response = await fetch('/api/llm/provider-models');
+                if (response.ok) {
+                    providerModelsCache = await response.json();
+                    console.log('Loaded provider models from config:', providerModelsCache);
+                    // Trigger initial population
+                    onProviderChange();
+                }
+            } catch (error) {
+                console.error('Failed to load provider models:', error);
+            }
+        }
+
+        function onProviderChange() {
+            const providerSelect = document.getElementById('aiProviderSelect');
+            const modelSection = document.getElementById('providerModelSection');
+            const modelSelect = document.getElementById('providerModelSelect');
+
+            if (!providerSelect || !modelSection || !modelSelect) return;
+
+            const selectedProvider = providerSelect.value;
+
+            // Get models for this provider from cache
+            const providerData = providerModelsCache?.[selectedProvider];
+            const models = providerData?.models || [];
+
+            // Show model selector if provider has multiple models
+            if (models.length > 1) {
+                modelSection.style.display = 'block';
+
+                // Populate model dropdown
+                modelSelect.innerHTML = models.map(m => {
+                    const isDefault = m.default ? ' selected' : '';
+                    const icon = m.default ? '⭐ ' : '';
+                    return `<option value="${m.id}"${isDefault}>${icon}${m.name}</option>`;
+                }).join('');
+
+                // Add event listener for validation
+                if (!modelSelect.hasAttribute('data-val-hooked')) {
+                    modelSelect.addEventListener('change', () => validateProviderConnection());
+                    modelSelect.setAttribute('data-val-hooked', 'true');
+                }
+            } else {
+                modelSection.style.display = 'none';
+                modelSelect.innerHTML = '<option value="default">Default</option>';
+            }
+
+            // Validate connection on provider change
+            validateProviderConnection();
+        }
+
+        // Validate LLM connection
+        async function validateProviderConnection() {
+            const providerSelect = document.getElementById('aiProviderSelect');
+            const modelSelect = document.getElementById('providerModelSelect');
+            const statusBadge = document.getElementById('modelConnectionStatus');
+            const modelSection = document.getElementById('providerModelSection');
+
+            if (!providerSelect || !statusBadge) return;
+
+            const provider = providerSelect.value;
+            let model = '';
+
+            // Determine model
+            if (modelSection.style.display === 'none') {
+                const pData = providerModelsCache?.[provider];
+                model = pData?.models?.[0]?.id || '';
+            } else {
+                model = modelSelect ? modelSelect.value : '';
+            }
+
+            // Update UI to "Checking"
+            statusBadge.style.display = 'inline-block';
+            statusBadge.textContent = 'Checking...';
+            statusBadge.className = 'badge badge-sm badge-warning';
+            statusBadge.style.backgroundColor = '#f39c12'; // Warning orange
+
+            try {
+                const response = await fetch('/api/llm/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider, model })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    statusBadge.textContent = `Connected (${result.latency})`;
+                    statusBadge.className = 'badge badge-sm badge-success';
+                    statusBadge.style.backgroundColor = '#2ecc71'; // Success green
+                } else {
+                    // Show short error if possible
+                    let msg = 'Failed';
+                    if (result.message.includes('429')) msg = 'Rate Limit';
+                    else if (result.message.includes('404')) msg = 'Not Found';
+                    else if (result.message.includes('Timeout')) msg = 'Timeout';
+                    else if (result.message.includes('API Key')) msg = 'No Key';
+
+                    statusBadge.textContent = msg;
+                    statusBadge.className = 'badge badge-sm badge-error';
+                    statusBadge.style.backgroundColor = '#e74c3c'; // Error red
+                    statusBadge.title = result.message;
+                }
+            } catch (e) {
+                console.warn('Validation check failed:', e);
+                statusBadge.textContent = 'Net Error';
+                statusBadge.className = 'badge badge-sm badge-error';
+                statusBadge.style.backgroundColor = '#e74c3c';
+            }
+        }
+
+        // Load models on page load
+        document.addEventListener('DOMContentLoaded', loadProviderModels);
+
+        // Toggle chat settings panel
+        function toggleChatSettings() {
+            const section = document.getElementById('chatProviderSection');
+            if (section) {
+                section.classList.toggle('collapsed');
+            }
+        }
+
+        // Quick action questions
+        function askQuickQuestion(type) {
+            if (!window.dashboard || !window.dashboard.currentScanId) {
+                alert('Please run a scan first or select a previous scan.');
+                return;
+            }
+
+            const questions = {
+                'summary': 'Provide a brief EXECUTIVE SUMMARY of this security scan: 1) Total assets scanned 2) Overall security posture 3) Key statistics (total CVEs, severity breakdown). Do NOT list individual CVEs - give a high-level overview only.',
+                'critical': 'List ONLY the CRITICAL severity vulnerabilities (CVSS score 9.0 or higher). For each one, provide: 1) CVE ID 2) CVSS score 3) Affected host/IP. If there are no critical CVEs, state that explicitly.',
+                'remediation': 'Based on the scan findings, provide the TOP 5 most urgent remediation actions. Prioritize by severity and exploitability. Include specific CVE IDs and affected systems.',
+                'risks': 'Identify the TOP 3 highest-risk assets/hosts in this scan. For each host: 1) IP/hostname 2) Number of vulnerabilities 3) Most severe CVE. Explain why these are the riskiest targets.'
+            };
+
+            const question = questions[type];
+            if (question) {
+                window.dashboard.sendMessage(question);
+            }
+        }
+
+        // ============================================================
+        // New Features: Brute Force, Proxy, and Report Generation
+        // ============================================================
+
+        // Toggle brute force options visibility
+        function toggleBruteForceOptions() {
+            const checkbox = document.getElementById('chkBruteForce');
+            const options = document.getElementById('bruteForceOptions');
+            if (checkbox.checked) {
+                options.classList.remove('options-hidden');
+                options.classList.add('options-visible');
+            } else {
+                options.classList.add('options-hidden');
+                options.classList.remove('options-visible');
+            }
+        }
+
+        // Toggle proxy options visibility
+        function toggleProxyOptions() {
+            const checkbox = document.getElementById('chkProxy');
+            const options = document.getElementById('proxyOptions');
+            if (checkbox.checked) {
+                options.classList.remove('options-hidden');
+                options.classList.add('options-visible');
+            } else {
+                options.classList.add('options-hidden');
+                options.classList.remove('options-visible');
+            }
+        }
+
+        // Custom wordlist state
+        let customWordlistActive = false;
+        let customWordlistContent = [];
+
+        // Load custom wordlist from textarea and upload to server
+        async function loadCustomWordlist() {
+            const textarea = document.getElementById('customWordlistInput');
+            const content = textarea.value.trim();
+
+            if (!content) {
+                showWordlistStatus('❌ Please enter subdomain prefixes', 'var(--danger)');
+                return;
+            }
+
+            // Parse entries (one per line)
+            const entries = content.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0 && !line.startsWith('#'));
+
+            if (entries.length === 0) {
+                showWordlistStatus('❌ No valid entries found', 'var(--danger)');
+                return;
+            }
+
+            try {
+                // Upload to server
+                const response = await fetch('/api/wordlist/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'custom',
+                        content: entries.join('\n')
+                    })
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    customWordlistActive = true;
+                    customWordlistContent = entries;
+
+                    // Show status and disable dropdown
+                    showWordlistStatus(`✓ Custom wordlist uploaded: ${result.entry_count || entries.length} entries`, 'var(--success)');
+                    document.getElementById('wordlistSelect').disabled = true;
+                } else {
+                    showWordlistStatus(`❌ Upload failed: ${result.detail || 'Unknown error'}`, 'var(--danger)');
+                }
+            } catch (error) {
+                // Fallback to local-only mode
+                customWordlistActive = true;
+                customWordlistContent = entries;
+                showWordlistStatus(`✓ Custom wordlist loaded: ${entries.length} entries (local only)`, 'var(--success)');
+                document.getElementById('wordlistSelect').disabled = true;
+                console.error('Failed to upload wordlist:', error);
+            }
+        }
+
+        // Clear custom wordlist
+        async function clearCustomWordlist() {
+            try {
+                // Clear from server
+                await fetch('/api/wordlist/clear', { method: 'POST' });
+            } catch (error) {
+                console.error('Failed to clear server wordlist:', error);
+            }
+
+            customWordlistActive = false;
+            customWordlistContent = [];
+            document.getElementById('customWordlistInput').value = '';
+            document.getElementById('wordlistSelect').disabled = false;
+            showWordlistStatus('', '');
+            document.getElementById('wordlistStatus').classList.add('hidden');
+        }
+
+        // Show wordlist status message
+        function showWordlistStatus(message, color) {
+            const status = document.getElementById('wordlistStatus');
+            if (message) {
+                status.classList.remove('hidden');
+                status.classList.toggle('status-text-success', color === 'var(--success)');
+                status.classList.toggle('status-text-danger', color === 'var(--danger)');
+            } else {
+                status.classList.add('hidden');
+            }
+            status.textContent = message;
+        }
+
+        // Load available wordlists into dropdown
+        async function loadWordlists() {
+            try {
+                const response = await fetch('/api/wordlist/list');
+                const data = await response.json();
+                const select = document.getElementById('wordlistSelect');
+
+                // Keep built-in options and add custom ones
+                const builtInOptions = `
+                    <option value="tiny">Tiny (100) - Quick Test</option>
+                    <option value="small" selected>Small (1K) - Fast</option>
+                    <option value="medium">Medium (5K) - Balanced</option>
+                    <option value="large">Large (20K) - Thorough</option>
+                `;
+                select.innerHTML = builtInOptions;
+
+                // Add custom wordlists if any
+                if (data.wordlists && data.wordlists.length > 0) {
+                    const separator = document.createElement('option');
+                    separator.disabled = true;
+                    separator.textContent = '─── Custom Lists ───';
+                    select.appendChild(separator);
+
+                    data.wordlists.forEach(wl => {
+                        if (!['tiny', 'small', 'medium', 'large'].includes(wl.id)) {
+                            const option = document.createElement('option');
+                            option.value = wl.id;
+                            option.textContent = `${wl.name} (${wl.entry_count.toLocaleString()})`;
+                            select.appendChild(option);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load wordlists:', error);
+            }
+        }
+
+        // Add single proxy
+        async function addSingleProxy() {
+            const input = document.getElementById('proxyInput');
+            const proxy = input.value.trim();
+
+            if (!proxy) {
+                alert('Please enter a proxy address');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/proxy/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ proxy })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    input.value = '';
+                    updateProxyStats();
+                } else {
+                    alert('Failed to add proxy: ' + (result.error || 'Invalid format'));
+                }
+            } catch (error) {
+                alert('Failed to add proxy: ' + error.message);
+            }
+        }
+
+        // Load proxy list from textarea
+        async function loadProxyList() {
+            const textarea = document.getElementById('proxyListInput');
+            const content = textarea.value.trim();
+
+            if (!content) {
+                alert('Please paste proxy list (one proxy per line)');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/proxy/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    textarea.value = '';
+                    await updateProxyStats(); // Allow updateProxyStats to handle DOM
+                    showProxyStatus(`✓ Loaded ${result.added} proxies`, 'var(--success)');
+                } else {
+                    alert('Failed to load proxies: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Failed to load proxies: ' + error.message);
+            }
+        }
+
+        // Clear all proxies
+        async function clearProxies() {
+            try {
+                const response = await fetch('/api/proxy/clear', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('proxyInput').value = '';
+                    document.getElementById('proxyListInput').value = '';
+                    document.getElementById('proxyStats').classList.add('hidden');
+                }
+            } catch (error) {
+                alert('Failed to clear proxies: ' + error.message);
+            }
+        }
+
+        // Clear subdomain cache for current scan's domain
+        async function clearSubdomainCache() {
+            // Get domain from the current scan
+            const scanId = window.dashboard?.currentScanId;
+            if (!scanId) {
+                if (typeof toast !== 'undefined') {
+                    toast.warning('No Scan Selected', 'Please select a scan first.');
+                } else {
+                    alert('Please select a scan first to clear its subdomain cache.');
+                }
+                return;
+            }
+
+            // Get domain from session select dropdown text
+            const sessionSelect = document.getElementById('sessionSelect');
+            const selectedOption = sessionSelect?.selectedOptions[0];
+            if (!selectedOption) {
+                alert('Could not determine domain. Please select a scan.');
+                return;
+            }
+
+            // Extract domain from option text (format: "🔒 domain.com - date")
+            const optionText = selectedOption.textContent;
+            const domainMatch = optionText.match(/[🔒🔓]\s*([a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+            if (!domainMatch) {
+                alert('Could not extract domain from scan.');
+                return;
+            }
+
+            const domain = domainMatch[1];
+
+            // Confirm action
+            if (!confirm(`Clear subdomain cache for "${domain}"?\n\nThis will remove cached subdomains. The next scan will discover subdomains fresh from all sources.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/cache/${encodeURIComponent(domain)}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+
+                if (result.cleared) {
+                    if (typeof toast !== 'undefined') {
+                        toast.success('Cache Cleared', `Subdomain cache cleared for ${domain}`);
+                    } else {
+                        alert(`✓ Subdomain cache cleared for ${domain}`);
+                    }
+                } else {
+                    if (typeof toast !== 'undefined') {
+                        toast.info('No Cache', `No cached subdomains found for ${domain}`);
+                    } else {
+                        alert(`No cached subdomains found for ${domain}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to clear cache:', error);
+                alert('Failed to clear cache: ' + error.message);
+            }
+        }
+
+        // Update proxy stats display
+        async function updateProxyStats() {
+            try {
+                const response = await fetch('/api/proxy/list');
+                const data = await response.json();
+                const count = data.proxies?.length || 0;
+
+                const statsEl = document.getElementById('proxyStats');
+                const countEl = document.getElementById('proxyCount');
+
+                if (statsEl && countEl) {
+                    if (count > 0) {
+                        statsEl.classList.remove('hidden');
+                        statsEl.style.display = 'block';
+                        countEl.textContent = count;
+                    } else {
+                        statsEl.classList.add('hidden');
+                        statsEl.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to update proxy stats:', error);
+            }
+        }
+
+        // Show proxy status message
+        function showProxyStatus(message, color) {
+            const stats = document.getElementById('proxyStats');
+            stats.style.display = 'block';
+            stats.style.color = color;
+            stats.innerHTML = message;
+        }
+
+        // ============================================================
+        // REPORT GENERATION SYSTEM - Direct window scope definitions
+        // ============================================================
+
+        // Show the report dialog modal
+        window.showReportDialog = function () {
+            // Get scan ID from dashboard or session dropdown
+            let scanId = window.dashboard?.currentScanId;
+            if (!scanId) {
+                const sessionSelect = document.getElementById('sessionSelect');
+                if (sessionSelect && sessionSelect.value) {
+                    scanId = sessionSelect.value;
+                }
+            }
+
+            if (!scanId) {
+                alert('Please select a scan first from the dropdown or run a new scan.');
+                return;
+            }
+
+            document.getElementById('reportDialog').classList.remove('hidden');
+        };
+
+        // Hide the report dialog modal
+        window.hideReportDialog = function () {
+            document.getElementById('reportDialog').classList.add('hidden');
+        };
+
+        // Generate and download report (HTML or PDF)
+        window.generateReport = async function () {
+            // Get scan ID
+            let scanId = window.dashboard?.currentScanId;
+            if (!scanId) {
+                const sel = document.getElementById('sessionSelect');
+                if (sel && sel.value) scanId = sel.value;
+            }
+            if (!scanId) {
+                if (typeof toast !== 'undefined') {
+                    toast.warning('No Scan Selected', 'Please select a scan first.');
+                } else {
+                    alert('Please select a scan first.');
+                }
+                return;
+            }
+
+            // Get options from dialog
+            const formatRadio = document.querySelector('input[name="reportFormat"]:checked');
+            const format = formatRadio ? formatRadio.value : 'html';
+            const includeAI = document.getElementById('includeAIAnalysis')?.checked !== false;
+            const includeTools = document.getElementById('includeToolFindings')?.checked !== false;
+
+            // Show loading
+            const btn = document.getElementById('btnGenerateReport');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner" style="display:inline-block;width:16px;height:16px;border:2px solid transparent;border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite"></span> Generating...';
+            btn.disabled = true;
+
+            if (typeof toast !== 'undefined') {
+                toast.info('Generating Report', `Creating ${format.toUpperCase()} report...`);
+            }
+
+            try {
+                const resp = await fetch(`/api/report/generate/${scanId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        format: format,
+                        include_ai_analysis: includeAI,
+                        include_tool_findings: includeTools
+                    })
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Server error');
+                }
+
+                // Read response as blob
+                const blob = await resp.blob();
+                const contentType = resp.headers.get('Content-Type') || '';
+                const isHTML = contentType.includes('html');
+                const isPDF = contentType.includes('pdf');
+
+                // Get filename from Content-Disposition header
+                let filename = `TwinSanity_Report_${scanId}.${isPDF ? 'pdf' : 'html'}`;
+                const disp = resp.headers.get('Content-Disposition');
+                if (disp) {
+                    // Extract filename from: attachment; filename="name.html"
+                    const m = disp.match(/filename="([^"]+)"/);
+                    if (m && m[1]) {
+                        filename = m[1];
+                    }
+                }
+
+                // Download the file
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.click();
+
+                // Preview HTML in new tab
+                if (isHTML) {
+                    window.open(url, '_blank');
+                }
+
+                // Cleanup
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+                // Close dialog and show success
+                window.hideReportDialog();
+
+                if (typeof toast !== 'undefined') {
+                    toast.success('Report Generated', `${isPDF ? 'PDF' : 'HTML'} report downloaded successfully!`);
+                }
+
+
+
+
+            } catch (err) {
+                console.error('Report error:', err);
+                if (typeof toast !== 'undefined') {
+                    toast.error('Report Failed', err.message);
+                } else {
+                    alert('❌ Failed: ' + err.message);
+                }
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        };
+
+        // Handle format option selection visual feedback
+        document.addEventListener('DOMContentLoaded', () => {
+            const formatRadios = document.querySelectorAll('input[name="reportFormat"]');
+            const pdfNotice = document.getElementById('pdfNotice');
+
+            formatRadios.forEach(radio => {
+                radio.addEventListener('change', () => {
+                    if (pdfNotice) {
+                        pdfNotice.style.display = radio.value === 'pdf' ? 'block' : 'none';
+                    }
+                    // Update visual selection
+                    document.querySelectorAll('.format-option').forEach(opt => {
+                        opt.style.borderColor = 'var(--border-color)';
+                    });
+                    radio.closest('.format-option')?.style.setProperty('border-color',
+                        radio.value === 'html' ? 'var(--accent-cyan)' : 'var(--accent-purple)');
+                });
+                // Trigger initial state
+                if (radio.checked) radio.dispatchEvent(new Event('change'));
+            });
+        });
+
+        // Add CSS for spin animation
+        (function () {
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        })();
+
+        // Initialize wordlists on load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof loadWordlists === 'function') {
+                loadWordlists();
+            }
+        });
+
+        // Expose other inline functions to window scope
+        window.loadCustomWordlist = loadCustomWordlist;
+        window.clearCustomWordlist = clearCustomWordlist;
+        window.loadProxyList = loadProxyList;
+        window.addSingleProxy = addSingleProxy;
+        window.clearProxies = clearProxies;
+    </script>
+
+    <!-- Report Generation Dialog - Placed at end of body for proper z-index stacking -->
+    <div id="reportDialog" class="modal-overlay hidden">
+        <div class="modal-content modal-content-sm">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)"
+                        stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    Generate Report
+                </h3>
+                <button class="btn-icon btn-icon-transparent" title="Close" onclick="hideReportDialog()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group-mb">
+                    <label class="form-label form-label-block">Report Format</label>
+                    <div class="format-grid">
+                        <label class="format-option" data-format="html">
+                            <input type="radio" name="reportFormat" value="html" checked>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="16 18 22 12 16 6" />
+                                <polyline points="8 6 2 12 8 18" />
+                            </svg>
+                            <span>HTML</span>
+                        </label>
+                        <label class="format-option format-pdf" data-format="pdf">
+                            <input type="radio" name="reportFormat" value="pdf">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                            </svg>
+                            <span>PDF</span>
+                        </label>
+                    </div>
+                    <p id="pdfNotice" class="warning-text hidden">
+                        ⚠️ PDF requires WeasyPrint/wkhtmltopdf. If unavailable, HTML will be generated.
+                    </p>
+                </div>
+                <div class="form-group-sm">
+                    <label class="format-option">
+                        <input type="checkbox" id="includeAIAnalysis" checked>
+                        <span>Include AI Security Analysis</span>
+                    </label>
+                </div>
+                <div class="form-group-sm">
+                    <label class="format-option">
+                        <input type="checkbox" id="includeToolFindings" checked>
+                        <span>Include Tool Findings (Nuclei, XSS, API)</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="hideReportDialog()">Cancel</button>
+                <button class="btn btn-primary btn-icon-ai" id="btnGenerateReport" onclick="generateReport()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Generate & Download
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subdomain Detail Modal -->
+    <div id="subdomainModal" class="modal-overlay hidden" onclick="if(event.target===this) hideSubdomainModal()">
+        <div class="modal subdomain-detail-modal">
+            <div class="modal-header subdomain-modal-header">
+                <h3 class="modal-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)"
+                        stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="2" y1="12" x2="22" y2="12" />
+                        <path
+                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                    </svg>
+                    <span id="modalSubdomainName">subdomain.example.com</span>
+                </h3>
+                <button class="btn-icon btn-icon-transparent" title="Close" onclick="hideSubdomainModal()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body subdomain-modal-body">
+                <div class="subdomain-detail-grid">
+                    <div class="detail-card">
+                        <div class="detail-card-header">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                                <line x1="8" y1="21" x2="16" y2="21" />
+                                <line x1="12" y1="17" x2="12" y2="21" />
+                            </svg>
+                            Host Information
+                        </div>
+                        <div class="detail-card-content">
+                            <div class="detail-row">
+                                <span class="detail-label">IP Address</span>
+                                <span class="detail-value" id="modalIP">-</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Open Ports</span>
+                                <span class="detail-value" id="modalPorts">-</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Technologies</span>
+                                <span class="detail-value" id="modalTags">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-card severity-summary">
+                        <div class="detail-card-header">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                <line x1="12" y1="9" x2="12" y2="13" />
+                                <line x1="12" y1="17" x2="12.01" y2="17" />
+                            </svg>
+                            Vulnerability Summary
+                        </div>
+                        <div class="severity-boxes" id="modalSeveritySummary">
+                            <div class="severity-box critical"><span class="sev-count">0</span><span
+                                    class="sev-label">Critical</span></div>
+                            <div class="severity-box high"><span class="sev-count">0</span><span
+                                    class="sev-label">High</span></div>
+                            <div class="severity-box medium"><span class="sev-count">0</span><span
+                                    class="sev-label">Medium</span></div>
+                            <div class="severity-box low"><span class="sev-count">0</span><span
+                                    class="sev-label">Low</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cve-detail-section">
+                    <div class="cve-detail-header">
+                        <h4>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                            CVE Details (<span id="modalCVECount">0</span>)
+                        </h4>
+                        <input type="text" id="modalCVESearch" class="filter-input compact"
+                            placeholder="Filter CVEs...">
+                    </div>
+                    <div class="cve-detail-list" id="modalCVEList">
+                        <div class="empty-cve-state">No vulnerabilities found for this subdomain</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create User Modal -->
+    <div id="createUserModal" class="modal-overlay hidden">
+        <div class="modal-content modal-content-sm">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)"
+                        stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <line x1="19" y1="8" x2="19" y2="14" />
+                        <line x1="22" y1="11" x2="16" y2="11" />
+                    </svg>
+                    Create New User
+                </h3>
+                <button class="btn-icon btn-icon-transparent" title="Close" onclick="hideCreateUserModal()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="createUserForm" onsubmit="createNewUser(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="newUsername">Username</label>
+                        <input type="text" id="newUsername" class="form-input" placeholder="Enter username" required
+                            minlength="3" aria-describedby="usernameHelp">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="newPassword">Password</label>
+                        <input type="password" id="newPassword" class="form-input" placeholder="Enter password" required
+                            minlength="6" aria-describedby="passwordHelp">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="confirmPassword">Confirm Password</label>
+                        <input type="password" id="confirmPassword" class="form-input" placeholder="Confirm password"
+                            required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="newUserRole">Role</label>
+                        <select id="newUserRole" class="form-input" aria-label="User role selection">
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="hideCreateUserModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createNewUser(event)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Create User
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal-overlay hidden">
+        <div class="modal-content modal-content-sm">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)"
+                        stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                    Edit User
+                </h3>
+                <button class="btn-icon btn-icon-transparent" title="Close" onclick="hideEditUserModal()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editUserId">
+                <div class="form-group">
+                    <label class="form-label" for="editUsername">Username</label>
+                    <input type="text" id="editUsername" class="form-input readonly-input" readonly
+                        title="Username (read-only)">
+                </div>
+                <!-- Password hash display removed - passwords should never be revealed -->
+                <div class="form-group">
+                    <label class="form-label" for="editNewPassword">New Password (leave empty to keep current)</label>
+                    <div class="password-input-group">
+                        <input type="password" id="editNewPassword" class="form-input" placeholder="Enter new password"
+                            minlength="6" aria-describedby="newPasswordHelp">
+                        <button type="button" class="btn btn-ghost btn-sm"
+                            onclick="togglePasswordVisibility('editNewPassword')" title="Show/Hide"
+                            aria-label="Toggle password visibility">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="editUserRole">Role</label>
+                    <select id="editUserRole" class="form-input" aria-label="User role selection">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="hideEditUserModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveUserChanges()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                        <polyline points="17 21 17 13 7 13 7 21" />
+                        <polyline points="7 3 7 8 15 8" />
+                    </svg>
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

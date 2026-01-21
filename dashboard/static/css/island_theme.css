@@ -1,0 +1,1110 @@
+/* ================================================
+   TWINSANITY ISLAND VIEW - "THE TWISTED REALITY"
+   Crash Twinsanity PS2 Era Tribute Theme
+   10th Dimension & Iceberg Lab Aesthetics
+   Updated: Softer Color Palette for Eye Comfort
+   ================================================ */
+
+/* ===== GOOGLE FONTS IMPORT ===== */
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Carter+One&display=swap');
+
+/* ===== CSS VARIABLES - SOFTER PALETTE ===== */
+:root {
+    /* Core Colors - Muted for Comfort */
+    --evil-red: #e05780;
+    --evil-red-glow: rgba(224, 87, 128, 0.3);
+    --cortex-yellow: #e6b422;
+    --cortex-yellow-glow: rgba(230, 180, 34, 0.25);
+    --void-purple: #9d7cd8;
+    --void-purple-deep: #1e1e2e;
+    --dimension-black: #11111b;
+    --nitro-green: #7dc4e4;
+    --nitro-green-glow: rgba(125, 196, 228, 0.3);
+    --wumpa-orange: #fab387;
+    --ice-cyan: #89dceb;
+    --tribal-brown: #6c5c4d;
+    --bone-white: #cdd6f4;
+
+    /* UI Colors - Darker, Easier on Eyes */
+    --island-rock: #313244;
+    --island-rock-light: #45475a;
+    --island-metal: #3b3e52;
+    --cell-shade-dark: #1e1e2e;
+    --cell-shade-outline: #181825;
+
+    /* Typography */
+    --font-bangers: 'Bangers', cursive;
+    --font-carter: 'Carter One', cursive;
+    --font-game: 'Press Start 2P', cursive;
+
+    /* Effects - Reduced Glow Intensity */
+    --glow-evil: 0 0 10px var(--evil-red-glow);
+    --glow-cortex: 0 0 8px var(--cortex-yellow-glow);
+    --glow-nitro: 0 0 10px var(--nitro-green-glow);
+    --glow-void: 0 0 15px rgba(157, 124, 216, 0.2);
+}
+
+/* ===== GLOBAL ATMOSPHERE - THE 10TH DIMENSION ===== */
+.island-view {
+    min-height: 100vh;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background:
+        radial-gradient(ellipse at 20% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(255, 0, 85, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, var(--void-purple-deep) 0%, var(--dimension-black) 100%);
+    position: relative;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Floating Glitch Particles */
+.island-view::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background-image:
+        radial-gradient(2px 2px at 20% 30%, var(--void-purple) 50%, transparent 50%),
+        radial-gradient(2px 2px at 40% 70%, var(--evil-red) 50%, transparent 50%),
+        radial-gradient(1px 1px at 90% 40%, var(--cortex-yellow) 50%, transparent 50%),
+        radial-gradient(2px 2px at 60% 20%, var(--ice-cyan) 50%, transparent 50%),
+        radial-gradient(1px 1px at 30% 80%, var(--nitro-green) 50%, transparent 50%),
+        radial-gradient(2px 2px at 70% 60%, var(--void-purple) 50%, transparent 50%);
+    background-size: 200px 200px;
+    animation: floatParticles 20s linear infinite;
+    opacity: 0.6;
+    z-index: 0;
+}
+
+@keyframes floatParticles {
+    0% {
+        transform: translateY(0) translateX(0);
+    }
+
+    25% {
+        transform: translateY(-20px) translateX(10px);
+    }
+
+    50% {
+        transform: translateY(-10px) translateX(-10px);
+    }
+
+    75% {
+        transform: translateY(-30px) translateX(5px);
+    }
+
+    100% {
+        transform: translateY(0) translateX(0);
+    }
+}
+
+/* Dimension Rift Overlay */
+.dimension-rift {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background:
+        linear-gradient(45deg, transparent 40%, rgba(168, 85, 247, 0.03) 50%, transparent 60%);
+    animation: riftPulse 8s ease-in-out infinite;
+    z-index: 1;
+}
+
+@keyframes riftPulse {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 0.8;
+    }
+}
+
+/* ===== ISLAND VIEW HEADER ===== */
+.island-header {
+    position: relative;
+    z-index: 10;
+    padding: 1.5rem 2rem;
+    background: linear-gradient(180deg, rgba(45, 0, 77, 0.9) 0%, transparent 100%);
+    border-bottom: 3px solid var(--cell-shade-outline);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.island-logo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.island-logo-text {
+    font-family: var(--font-bangers);
+    font-size: 2.5rem;
+    color: var(--cortex-yellow);
+    text-shadow:
+        3px 3px 0 var(--cell-shade-outline),
+        -1px -1px 0 var(--cell-shade-outline),
+        1px -1px 0 var(--cell-shade-outline),
+        -1px 1px 0 var(--cell-shade-outline),
+        0 0 20px var(--cortex-yellow-glow);
+    letter-spacing: 2px;
+}
+
+.island-subtitle {
+    font-family: var(--font-carter);
+    font-size: 0.9rem;
+    color: var(--evil-red);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}
+
+/* ===== 1. PROJECT ARCHIPELAGO - 3D FLOATING ISLANDS ===== */
+.archipelago {
+    position: relative;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2.5rem;
+    padding: 2rem;
+    perspective: 1200px;
+}
+
+.island-card {
+    position: relative;
+    background: linear-gradient(145deg, var(--island-rock-light) 0%, var(--island-rock) 50%, var(--cell-shade-dark) 100%);
+    border: 3px solid var(--cell-shade-outline);
+    border-radius: 20px 20px 40px 40px;
+    padding: 1.5rem;
+    transform: perspective(1000px) rotateX(8deg) rotateY(-2deg);
+    transform-style: preserve-3d;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    overflow: visible;
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.5),
+        0 10px 20px rgba(0, 0, 0, 0.3),
+        inset 0 2px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Floating Rock Base */
+.island-card::before {
+    content: '';
+    position: absolute;
+    bottom: -25px;
+    left: 10%;
+    width: 80%;
+    height: 30px;
+    background: linear-gradient(180deg, var(--island-rock) 0%, var(--cell-shade-dark) 100%);
+    border: 3px solid var(--cell-shade-outline);
+    border-radius: 50%;
+    transform: rotateX(70deg);
+    z-index: -1;
+}
+
+/* Cell-Shaded Edge Highlight */
+.island-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    border-radius: 20px 20px 0 0;
+}
+
+.island-card:hover {
+    transform: perspective(1000px) rotateX(5deg) rotateY(0deg) translateY(-25px) scale(1.02);
+    box-shadow:
+        0 30px 60px rgba(0, 0, 0, 0.6),
+        0 0 40px var(--cortex-yellow-glow);
+    border-color: var(--cortex-yellow);
+}
+
+.island-card:hover .island-title {
+    color: var(--cortex-yellow);
+    text-shadow: var(--glow-cortex);
+}
+
+/* Island Bounce Animation */
+.island-card.bounce {
+    animation: islandBounce 0.6s ease-in-out;
+}
+
+@keyframes islandBounce {
+
+    0%,
+    100% {
+        transform: perspective(1000px) rotateX(8deg) translateY(0);
+    }
+
+    25% {
+        transform: perspective(1000px) rotateX(5deg) translateY(-30px);
+    }
+
+    50% {
+        transform: perspective(1000px) rotateX(10deg) translateY(-10px);
+    }
+
+    75% {
+        transform: perspective(1000px) rotateX(6deg) translateY(-20px);
+    }
+}
+
+.island-title {
+    font-family: var(--font-bangers);
+    font-size: 1.5rem;
+    color: var(--bone-white);
+    text-shadow: 2px 2px 0 var(--cell-shade-outline);
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.island-description {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+
+.island-stats {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.island-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid var(--cell-shade-outline);
+    border-radius: 8px;
+    font-family: var(--font-carter);
+    font-size: 0.8rem;
+}
+
+.island-stat.critical {
+    background: rgba(255, 0, 85, 0.3);
+    border-color: var(--evil-red);
+    color: var(--evil-red);
+}
+
+.island-stat.warning {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: var(--cortex-yellow);
+    color: var(--cortex-yellow);
+}
+
+.island-stat.safe {
+    background: rgba(57, 255, 20, 0.2);
+    border-color: var(--nitro-green);
+    color: var(--nitro-green);
+}
+
+/* ===== 2. PSYCHETRON PORTAL SCANNER ===== */
+.psychetron-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem;
+    z-index: 10;
+}
+
+.psychetron {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg,
+            var(--ice-cyan),
+            var(--void-purple),
+            var(--evil-red),
+            var(--void-purple),
+            var(--ice-cyan));
+    border: 5px solid var(--cell-shade-outline);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow:
+        0 0 30px var(--glow-void),
+        inset 0 0 40px rgba(0, 0, 0, 0.5);
+    animation: psychetronIdle 4s linear infinite;
+}
+
+.psychetron::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 70%;
+    height: 70%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--dimension-black) 0%, var(--void-purple-deep) 100%);
+    border: 3px solid var(--cell-shade-outline);
+}
+
+.psychetron::after {
+    content: 'SCAN';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-bangers);
+    font-size: 1.8rem;
+    color: var(--cortex-yellow);
+    text-shadow: 2px 2px 0 var(--cell-shade-outline), var(--glow-cortex);
+    letter-spacing: 3px;
+    z-index: 1;
+}
+
+@keyframes psychetronIdle {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.psychetron:hover {
+    transform: scale(1.1);
+    box-shadow:
+        0 0 50px var(--void-purple),
+        0 0 80px var(--evil-red-glow),
+        inset 0 0 40px rgba(0, 0, 0, 0.5);
+}
+
+.psychetron:hover::after {
+    animation: textPulse 0.5s ease-in-out infinite;
+}
+
+@keyframes textPulse {
+
+    0%,
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+/* Active Scanning State */
+.psychetron.scanning {
+    animation: psychetronSpin 0.3s linear infinite;
+}
+
+@keyframes psychetronSpin {
+    from {
+        transform: rotate(0deg) scale(1.05);
+    }
+
+    to {
+        transform: rotate(360deg) scale(1.05);
+    }
+}
+
+/* Warp Tunnel Effect */
+.warp-tunnel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.warp-tunnel.active {
+    opacity: 1;
+    animation: warpEffect 1.5s ease-out forwards;
+}
+
+.warp-tunnel::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--ice-cyan) 0%, var(--void-purple) 50%, transparent 70%);
+    transform: translate(-50%, -50%);
+    animation: warpExpand 1.5s ease-out forwards;
+}
+
+@keyframes warpEffect {
+    0% {
+        background: transparent;
+    }
+
+    50% {
+        background: rgba(168, 85, 247, 0.3);
+    }
+
+    100% {
+        background: transparent;
+    }
+}
+
+@keyframes warpExpand {
+    0% {
+        width: 0;
+        height: 0;
+        opacity: 1;
+    }
+
+    100% {
+        width: 300vmax;
+        height: 300vmax;
+        opacity: 0;
+    }
+}
+
+.psychetron-label {
+    font-family: var(--font-carter);
+    font-size: 1rem;
+    color: var(--void-purple);
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    text-shadow: 0 0 10px var(--void-purple);
+}
+
+/* ===== 3. NITRO CRATE VULNERABILITY ALERTS ===== */
+.nitro-crate-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem;
+    justify-content: center;
+}
+
+.nitro-crate {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(145deg, #4ade80 0%, #22c55e 50%, #15803d 100%);
+    border: 4px solid var(--cell-shade-outline);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    animation: nitroBounce 1.5s ease-in-out infinite;
+    box-shadow:
+        0 10px 20px rgba(0, 0, 0, 0.4),
+        inset 0 -5px 15px rgba(0, 0, 0, 0.3),
+        inset 0 5px 10px rgba(255, 255, 255, 0.2);
+}
+
+/* Crate Face Design */
+.nitro-crate::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    border: 3px solid var(--cell-shade-outline);
+    border-radius: 4px;
+}
+
+.nitro-crate-label {
+    font-family: var(--font-bangers);
+    font-size: 1.2rem;
+    color: var(--cell-shade-outline);
+    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.3);
+    letter-spacing: 1px;
+    z-index: 1;
+}
+
+@keyframes nitroBounce {
+
+    0%,
+    100% {
+        transform: translateY(0) rotateY(0deg);
+    }
+
+    50% {
+        transform: translateY(-10px) rotateY(5deg);
+    }
+}
+
+.nitro-crate:hover {
+    animation: nitroShake 0.1s linear infinite;
+    box-shadow:
+        0 10px 20px rgba(0, 0, 0, 0.4),
+        0 0 30px var(--nitro-green-glow);
+}
+
+@keyframes nitroShake {
+
+    0%,
+    100% {
+        transform: translateX(0) rotate(0deg);
+    }
+
+    25% {
+        transform: translateX(-5px) rotate(-2deg);
+    }
+
+    50% {
+        transform: translateX(5px) rotate(2deg);
+    }
+
+    75% {
+        transform: translateX(-3px) rotate(-1deg);
+    }
+}
+
+/* Critical (Red) Nitro */
+.nitro-crate.critical {
+    background: linear-gradient(145deg, #ff6b6b 0%, #ff0055 50%, #cc0044 100%);
+}
+
+.nitro-crate.critical .nitro-crate-label {
+    color: var(--bone-white);
+    text-shadow: 2px 2px 0 var(--cell-shade-outline);
+}
+
+/* Explosion Effect */
+.nitro-explosion {
+    position: fixed;
+    pointer-events: none;
+    z-index: 2000;
+}
+
+.explosion-particle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: var(--nitro-green);
+    border-radius: 50%;
+    animation: explode 0.6s ease-out forwards;
+}
+
+@keyframes explode {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(0) translate(var(--tx), var(--ty));
+        opacity: 0;
+    }
+}
+
+/* ===== 4. UKA UKA AI ASSISTANT PANEL ===== */
+.uka-uka-panel {
+    position: relative;
+    background:
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L35 10L30 5L25 10Z' fill='%238b4513' opacity='0.3'/%3E%3C/svg%3E"),
+        linear-gradient(145deg, #5c3317 0%, var(--tribal-brown) 50%, #3d2211 100%);
+    border: 6px solid var(--cell-shade-outline);
+    border-radius: 20px;
+    padding: 1.5rem;
+    max-width: 450px;
+    margin: 2rem auto;
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.6),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1),
+        inset 0 -5px 15px rgba(0, 0, 0, 0.4);
+}
+
+/* Tribal Border Decoration */
+.uka-uka-panel::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: 10%;
+    right: 10%;
+    height: 8px;
+    background:
+        repeating-linear-gradient(90deg,
+            var(--bone-white) 0px,
+            var(--bone-white) 10px,
+            transparent 10px,
+            transparent 15px);
+    border-radius: 4px;
+}
+
+.uka-uka-panel::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 10%;
+    right: 10%;
+    height: 8px;
+    background:
+        repeating-linear-gradient(90deg,
+            var(--bone-white) 0px,
+            var(--bone-white) 10px,
+            transparent 10px,
+            transparent 15px);
+    border-radius: 4px;
+}
+
+.uka-uka-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px solid var(--cell-shade-outline);
+}
+
+.uka-uka-avatar {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(145deg, #1a1a2e 0%, #0a0012 100%);
+    border: 4px solid var(--evil-red);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    animation: maskFloat 3s ease-in-out infinite;
+    box-shadow: var(--glow-evil);
+}
+
+@keyframes maskFloat {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(-5deg);
+    }
+
+    50% {
+        transform: translateY(-8px) rotate(5deg);
+    }
+}
+
+.uka-uka-title {
+    font-family: var(--font-bangers);
+    font-size: 1.5rem;
+    color: var(--evil-red);
+    text-shadow: 2px 2px 0 var(--cell-shade-outline), var(--glow-evil);
+}
+
+.uka-uka-subtitle {
+    font-size: 0.75rem;
+    color: var(--cortex-yellow);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.uka-uka-messages {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.uka-uka-messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+.uka-uka-messages::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+.uka-uka-messages::-webkit-scrollbar-thumb {
+    background: var(--evil-red);
+    border-radius: 4px;
+}
+
+.uka-message {
+    background:
+        linear-gradient(145deg, #3d2211 0%, #2a1810 100%);
+    border: 3px solid var(--cell-shade-outline);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    position: relative;
+}
+
+.uka-message::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 15px;
+    border: 8px solid transparent;
+    border-right-color: var(--cell-shade-outline);
+}
+
+.uka-message::after {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 18px;
+    border: 5px solid transparent;
+    border-right-color: #3d2211;
+}
+
+.uka-message-text {
+    font-size: 0.9rem;
+    color: var(--evil-red);
+    line-height: 1.6;
+    text-shadow: 0 0 10px var(--evil-red-glow);
+}
+
+.uka-message.user {
+    background: linear-gradient(145deg, #1a1a2e 0%, #0a0012 100%);
+    margin-left: 2rem;
+}
+
+.uka-message.user::before {
+    left: auto;
+    right: -12px;
+    border-right-color: transparent;
+    border-left-color: var(--cell-shade-outline);
+}
+
+.uka-message.user::after {
+    left: auto;
+    right: -6px;
+    border-right-color: transparent;
+    border-left-color: #1a1a2e;
+}
+
+.uka-message.user .uka-message-text {
+    color: var(--ice-cyan);
+    text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+}
+
+.uka-input-container {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 3px solid var(--cell-shade-outline);
+}
+
+.uka-input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    border: 3px solid var(--cell-shade-outline);
+    border-radius: 10px;
+    color: var(--bone-white);
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.uka-input:focus {
+    border-color: var(--evil-red);
+    box-shadow: 0 0 15px var(--evil-red-glow);
+}
+
+.uka-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.uka-send-btn {
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(145deg, var(--evil-red) 0%, #cc0044 100%);
+    border: 3px solid var(--cell-shade-outline);
+    border-radius: 10px;
+    color: var(--bone-white);
+    font-family: var(--font-bangers);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.uka-send-btn:hover {
+    transform: scale(1.05);
+    box-shadow: var(--glow-evil);
+}
+
+/* ===== 5. WUMPA FRUIT PROGRESS BAR ===== */
+.wumpa-progress-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem;
+}
+
+.wumpa-progress-label {
+    font-family: var(--font-bangers);
+    font-size: 1.2rem;
+    color: var(--cortex-yellow);
+    text-shadow: 2px 2px 0 var(--cell-shade-outline);
+    letter-spacing: 2px;
+}
+
+.wumpa-fruits {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1rem 2rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 4px solid var(--cell-shade-outline);
+    border-radius: 50px;
+}
+
+.wumpa-fruit {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #666 0%, #444 100%);
+    border: 3px solid var(--cell-shade-outline);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    filter: grayscale(100%) brightness(0.5);
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: default;
+}
+
+.wumpa-fruit.collected {
+    background: linear-gradient(145deg, var(--wumpa-orange) 0%, #ff4500 100%);
+    filter: none;
+    animation: wumpaCollect 0.6s ease-out;
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.6);
+}
+
+@keyframes wumpaCollect {
+    0% {
+        transform: scale(0.5) rotate(-180deg);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.3) rotate(10deg);
+    }
+
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+/* Juice Splat Effect */
+.wumpa-fruit.collected::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, var(--wumpa-orange) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: juiceSplat 0.5s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes juiceSplat {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
+    }
+}
+
+.wumpa-fruit-icon {
+    z-index: 1;
+}
+
+.wumpa-percentage {
+    font-family: var(--font-carter);
+    font-size: 1.5rem;
+    color: var(--bone-white);
+    text-shadow: 2px 2px 0 var(--cell-shade-outline);
+    margin-top: 0.5rem;
+}
+
+/* ===== NAVIGATION TABS ===== */
+.island-nav {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    flex-wrap: wrap;
+}
+
+.island-nav-tab {
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(145deg, var(--island-rock-light) 0%, var(--island-rock) 100%);
+    border: 3px solid var(--cell-shade-outline);
+    border-radius: 12px;
+    color: var(--bone-white);
+    font-family: var(--font-carter);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.island-nav-tab:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.island-nav-tab.active {
+    background: linear-gradient(145deg, var(--void-purple) 0%, var(--void-purple-deep) 100%);
+    box-shadow: 0 0 20px var(--glow-void);
+}
+
+/* ===== STATS PANEL ===== */
+.island-stats-panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 3px solid var(--cell-shade-outline);
+    border-radius: 15px;
+    margin: 1rem 2rem;
+}
+
+.stat-box {
+    text-align: center;
+    padding: 1rem;
+    background: linear-gradient(145deg, var(--island-rock) 0%, var(--cell-shade-dark) 100%);
+    border: 3px solid var(--cell-shade-outline);
+    border-radius: 10px;
+}
+
+.stat-box-value {
+    font-family: var(--font-bangers);
+    font-size: 2rem;
+    color: var(--cortex-yellow);
+    text-shadow: 2px 2px 0 var(--cell-shade-outline);
+}
+
+.stat-box-label {
+    font-size: 0.75rem;
+    color: var(--bone-white);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 0.25rem;
+}
+
+.stat-box.danger .stat-box-value {
+    color: var(--evil-red);
+    text-shadow: 2px 2px 0 var(--cell-shade-outline), var(--glow-evil);
+}
+
+/* ===== MISC ANIMATIONS ===== */
+@keyframes glitchText {
+
+    0%,
+    100% {
+        transform: translate(0);
+    }
+
+    20% {
+        transform: translate(-2px, 2px);
+    }
+
+    40% {
+        transform: translate(2px, -2px);
+    }
+
+    60% {
+        transform: translate(-2px, -2px);
+    }
+
+    80% {
+        transform: translate(2px, 2px);
+    }
+}
+
+.glitch-text {
+    animation: glitchText 0.3s linear infinite;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+    .island-logo-text {
+        font-size: 1.8rem;
+    }
+
+    .archipelago {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+
+    .psychetron {
+        width: 140px;
+        height: 140px;
+    }
+
+    .wumpa-fruit {
+        width: 40px;
+        height: 40px;
+        font-size: 1.4rem;
+    }
+
+    .uka-uka-panel {
+        margin: 1rem;
+        max-width: none;
+    }
+}
+
+/* ===== UTILITY CLASSES ===== */
+.text-evil {
+    color: var(--evil-red);
+}
+
+.text-cortex {
+    color: var(--cortex-yellow);
+}
+
+.text-void {
+    color: var(--void-purple);
+}
+
+.text-nitro {
+    color: var(--nitro-green);
+}
+
+.text-ice {
+    color: var(--ice-cyan);
+}
+
+.glow-evil {
+    text-shadow: var(--glow-evil);
+}
+
+.glow-cortex {
+    text-shadow: var(--glow-cortex);
+}
+
+.glow-nitro {
+    text-shadow: var(--glow-nitro);
+}
+
+.font-bangers {
+    font-family: var(--font-bangers);
+}
+
+.font-carter {
+    font-family: var(--font-carter);
+}
