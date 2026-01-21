@@ -27,7 +27,7 @@ api_keys:
   openai: ''           # https://platform.openai.com/api-keys
   anthropic: ''        # https://console.anthropic.com/
   github: ''           # https://github.com/settings/tokens (for GitHub Models)
-  ollama_cloud: ''     # Hosted Ollama API key (if using cloud Ollama)
+  ollama_cloud: ''     # https://ollama.com/settings/keys (FREE - Recommended)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Security Settings
