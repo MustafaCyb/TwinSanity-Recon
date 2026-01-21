@@ -321,19 +321,19 @@ async def load_tools_findings_for_llm(scan_id: str) -> dict:
         from dashboard.services.api_discovery import get_api_discoveries
         
         # Load all tools findings
-        alive_hosts = await get_alive_hosts(scan_id)
-        nuclei_findings = await get_nuclei_findings(scan_id)
-        xss_findings = await get_xss_findings(scan_id)
-        api_discoveries = await get_api_discoveries(scan_id)
-        harvested_urls = await get_harvested_urls(scan_id)
+        alive_hosts = await get_alive_hosts(scan_id) or []
+        nuclei_findings = await get_nuclei_findings(scan_id) or []
+        xss_findings = await get_xss_findings(scan_id) or []
+        api_discoveries = await get_api_discoveries(scan_id) or []
+        harvested_urls = await get_harvested_urls(scan_id) or []
         
-        # Build summary for AI
+        # Build summary for AI (with null checks)
         summary = {
             "alive_hosts": {
                 "count": len(alive_hosts),
                 "sample": [
-                    {"url": h.get("url"), "status": h.get("status_code"), "title": h.get("title", "")[:50]}
-                    for h in alive_hosts[:15]
+                    {"url": h.get("url") if h else "", "status": h.get("status_code") if h else 0, "title": (h.get("title", "") or "")[:50] if h else ""}
+                    for h in alive_hosts[:15] if h
                 ]
             },
             "nuclei_findings": {

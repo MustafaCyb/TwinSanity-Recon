@@ -2382,6 +2382,12 @@ class TwinSanityDashboard {
         // Enhanced markdown-like formatting for AI responses
         let formatted = this.escapeHtml(content);
 
+        // Strip <think>...</think> tags (DeepSeek reasoning mode)
+        // These should not be shown to users in the chat
+        formatted = formatted.replace(/&lt;think&gt;[\s\S]*?&lt;\/think&gt;/gi, '');
+        formatted = formatted.replace(/<think>[\s\S]*?<\/think>/gi, '');
+        formatted = formatted.trim();
+
         // Code blocks (triple backticks) - process BEFORE other formatting
         formatted = formatted.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
             return `<pre class="code-block ${lang || ''}" style="background: var(--bg-card); padding: 1rem; border-radius: 8px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; margin: 0.5rem 0; border: 1px solid var(--border-subtle);"><code>${code.trim()}</code></pre>`;

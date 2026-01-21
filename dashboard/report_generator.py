@@ -1045,9 +1045,9 @@ class ReportGenerator:
         alive = tools_findings.get('alive_hosts', {})
         urls = tools_findings.get('harvested_urls', {})
         
-        # Check if there are any findings
+        # Check if there are any findings (including harvested URLs)
         total_findings = (nuclei.get('count', 0) + xss.get('count', 0) + 
-                         api.get('count', 0) + alive.get('count', 0))
+                         api.get('count', 0) + alive.get('count', 0) + urls.get('count', 0))
         
         if total_findings == 0:
             return ""
