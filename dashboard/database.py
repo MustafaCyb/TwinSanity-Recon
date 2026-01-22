@@ -130,8 +130,8 @@ class Database:
             # Add is_primary_admin column if it doesn't exist (migration for existing databases)
             try:
                 await db.execute("ALTER TABLE users ADD COLUMN is_primary_admin BOOLEAN DEFAULT 0")
-            except:
-                pass  # Column already exists
+            except Exception:
+                pass  # Column already exists - expected for existing databases
             
             # Set the first admin user as primary admin if not already set
             async with db.execute("SELECT COUNT(*) FROM users WHERE is_primary_admin = 1") as cursor:
@@ -381,15 +381,13 @@ class Database:
                 row = await cursor.fetchone()
                 return dict(row) if row else None
     
-    async def update_user(self, user_id: int, password: str = None, role: str = None):
-        """Update user password and/or role"""
+    async def update_user(self, user_id: int, password_hash: str = None, salt: str = None, role: str = None):
+        """Update user password_hash/salt and/or role. Expects pre-hashed password."""
         updates = []
         values = []
         
-        if password:
-            # Use the same PBKDF2-SHA256 hashing as registration/login
-            from dashboard.dependencies import hash_password
-            password_hash, salt = hash_password(password)
+        # Accept pre-hashed password (caller should hash it)
+        if password_hash and salt:
             updates.append("password_hash = ?")
             values.append(password_hash)
             updates.append("salt = ?")
@@ -408,6 +406,13 @@ class Database:
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(query, values)
             await db.commit()
+    
+    async def invalidate_user_sessions(self, user_id: int):
+        """Invalidate all sessions for a user (e.g., after password change)"""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+            await db.commit()
+            logger.info(f"All sessions invalidated for user {user_id}")
     
     async def set_scan_visibility(self, scan_id: str, visibility: str):
         """Toggle scan visibility (public/private)"""

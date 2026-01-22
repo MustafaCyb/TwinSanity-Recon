@@ -221,6 +221,44 @@ async def update_visibility(scan_id: str, update: VisibilityUpdate, request: Req
     return {"success": True, "visibility": update.visibility}
 
 
+@router.post("/api/scans/{scan_id}/cancel")
+async def cancel_scan(scan_id: str, request: Request):
+    """Cancel a running scan"""
+    from dashboard.database import get_db
+    from dashboard.state import state
+    from dashboard.websocket.manager import manager
+    
+    db = await get_db()
+    scan = await db.get_scan_by_id(scan_id)
+    
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    
+    user_id = getattr(request.state, "user_id", None)
+    is_super_admin = getattr(request.state, "is_primary_admin", False)
+    
+    # Access check: Only owner or super admin can cancel
+    if scan.get('user_id') != user_id and not is_super_admin:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    current_status = scan.get('status')
+    if current_status not in ('running', 'pending'):
+        raise HTTPException(status_code=400, detail=f"Cannot cancel scan with status: {current_status}")
+    
+    # Mark scan as cancelled in state
+    if state.cancel_scan(scan_id):
+        # Notify via WebSocket
+        await manager.broadcast(scan_id, {
+            "type": "status",
+            "status": "cancelling",
+            "message": "Scan cancellation requested..."
+        })
+        logger.info(f"Scan {scan_id} cancellation requested by user {user_id}")
+        return {"success": True, "message": "Scan cancellation requested"}
+    else:
+        raise HTTPException(status_code=400, detail="Failed to cancel scan")
+
+
 @router.get("/api/scans/{scan_id}/full")
 async def get_scan_full(scan_id: str, request: Request):
     """Get full scan details including results from file if needed"""
@@ -389,8 +427,9 @@ async def validate_websocket_session(websocket: WebSocket, token: str = None) ->
 
 @router.websocket("/ws/scan/{scan_id}")
 async def websocket_endpoint(websocket: WebSocket, scan_id: str, token: str = None):
-    """WebSocket endpoint for real-time scan updates with authentication."""
+    """WebSocket endpoint for real-time scan updates with authentication and authorization."""
     from dashboard.websocket.manager import manager
+    from dashboard.database import get_db
     
     # Validate session from token or cookie
     session = await validate_websocket_session(websocket, token)
@@ -399,6 +438,23 @@ async def websocket_endpoint(websocket: WebSocket, scan_id: str, token: str = No
         await websocket.close(code=4001, reason="Authentication required")
         logger.warning(f"WebSocket connection rejected for scan {scan_id}: no valid session")
         return
+    
+    # Authorization check: user must own the scan or scan must be public
+    db = await get_db()
+    scan = await db.get_scan_by_id(scan_id)
+    
+    if scan:
+        scan_owner_id = scan.get('user_id')
+        scan_visibility = scan.get('visibility', 'private')
+        requesting_user_id = session.get('user_id')
+        
+        # Allow if: user owns the scan OR scan is public
+        if scan_owner_id != requesting_user_id and scan_visibility != 'public':
+            await websocket.close(code=4003, reason="Access denied: you don't have permission to access this scan")
+            logger.warning(f"WebSocket connection rejected for scan {scan_id}: user {requesting_user_id} doesn't own scan (owner: {scan_owner_id})")
+            return
+    # Note: If scan doesn't exist yet (new scan being created), allow connection
+    # The scanner will create the scan entry
     
     await manager.connect(websocket, scan_id)
     try:

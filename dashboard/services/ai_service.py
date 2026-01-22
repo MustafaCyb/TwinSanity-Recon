@@ -18,9 +18,27 @@ from dashboard.config import log_llm_call
 from dashboard.websocket.manager import manager
 from dashboard.database import get_db
 
-# Global state for rate limits (module level)
-gemini_disabled_until = 0.0
-cloud_disabled_until = 0.0
+# Thread-safe global state for rate limits using asyncio.Lock
+_rate_limit_lock = asyncio.Lock()
+_rate_limits = {
+    "gemini": 0.0,
+    "cloud": 0.0
+}
+
+async def get_rate_limit(provider: str) -> float:
+    """Get rate limit timestamp for a provider (thread-safe)."""
+    async with _rate_limit_lock:
+        return _rate_limits.get(provider, 0.0)
+
+async def set_rate_limit(provider: str, until: float):
+    """Set rate limit timestamp for a provider (thread-safe)."""
+    async with _rate_limit_lock:
+        _rate_limits[provider] = until
+
+async def is_rate_limited(provider: str) -> bool:
+    """Check if provider is currently rate limited (thread-safe)."""
+    limit = await get_rate_limit(provider)
+    return time.time() < limit
 
 # V1 JSON extraction regex
 CODEFENCE_RE = re.compile(r"```(?:json)?\s*(\{[\s\S]*\})\s*```", re.IGNORECASE | re.MULTILINE)
@@ -118,17 +136,16 @@ async def call_gemini(prompt: str, _for_analysis: bool = False, scan_id: str = N
     Call Gemini API using V1 compatible REST endpoint.
     Returns (response, error, retry_after)
     """
-    global gemini_disabled_until
-    
     if not GEMINI_API_KEY:
-        return None, "GEMINI_API_KEY not configured", None
+        return None, "GEMINI_API_KEY not configured in config.yaml", None
     
-    # Check rate limit cooldown
-    if time.time() < gemini_disabled_until:
-        wait_time = int(gemini_disabled_until - time.time())
+    # Check rate limit cooldown (thread-safe)
+    if await is_rate_limited("gemini"):
+        gemini_disabled = await get_rate_limit("gemini")
+        wait_time = int(gemini_disabled - time.time())
         return None, f"Gemini rate limited, wait {wait_time}s", wait_time
     
-    # Audit log (redact for logging only, not for actual LLM prompt)
+    # Audit log
     log_llm_call("gemini", scan_id or "unknown", len(prompt), False)
     
     # Try SDK first (non-blocking with executor)
@@ -138,27 +155,47 @@ async def call_gemini(prompt: str, _for_analysis: bool = False, scan_id: str = N
         model = genai.GenerativeModel(GEMINI_MODEL)
         
         # Run in executor to avoid blocking
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            None, 
-            lambda: model.generate_content(prompt)
+        loop = asyncio.get_running_loop()
+        response = await asyncio.wait_for(
+            loop.run_in_executor(
+                None, 
+                lambda: model.generate_content(prompt)
+            ),
+            timeout=90
         )
-        return response.text, None, None
+        
+        # Extract text safely
+        if hasattr(response, 'text') and response.text:
+            return response.text, None, None
+        elif hasattr(response, 'candidates') and response.candidates:
+            for candidate in response.candidates:
+                if hasattr(candidate, 'content') and candidate.content:
+                    parts = getattr(candidate.content, 'parts', [])
+                    for part in parts:
+                        if hasattr(part, 'text') and part.text:
+                            return part.text, None, None
+        return None, "Gemini returned empty response", None
+        
     except ImportError:
-        pass  # Fall back to REST
+        logger.debug("Gemini SDK not installed, using REST API")
+    except asyncio.TimeoutError:
+        return None, "Gemini SDK timeout after 90s", None
     except Exception as e:
         msg = str(e)
         # Check for rate limit in error
         retry_match = re.search(r"retry_delay\s*{\s*seconds:\s*(\d+)\s*}", msg, re.IGNORECASE)
         if retry_match:
             retry_after = int(retry_match.group(1))
-            gemini_disabled_until = time.time() + retry_after
+            await set_rate_limit("gemini", time.time() + retry_after)
             return None, f"Gemini rate limited: {msg[:100]}", retry_after
-        return None, f"Gemini SDK error: {msg[:100]}", None
+        if "quota" in msg.lower() or "429" in msg:
+            await set_rate_limit("gemini", time.time() + 60)
+            return None, f"Gemini quota exceeded", 60
+        logger.warning(f"Gemini SDK error: {msg[:100]}")
     
     # REST API fallback
     try:
-        timeout = aiohttp.ClientTimeout(total=90)
+        timeout = aiohttp.ClientTimeout(total=90, connect=15)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             url = GEMINI_URL.format(model=GEMINI_MODEL)
             headers = {
@@ -170,127 +207,215 @@ async def call_gemini(prompt: str, _for_analysis: bool = False, scan_id: str = N
             async with session.post(url, json=payload, headers=headers) as resp:
                 if resp.status == 200:
                     j = await resp.json()
-                    text = j.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
-                    return text, None, None
+                    # Safely extract text from response
+                    candidates = j.get('candidates', [])
+                    if candidates:
+                        content = candidates[0].get('content', {})
+                        parts = content.get('parts', [])
+                        if parts:
+                            text = parts[0].get('text', '')
+                            if text:
+                                return text, None, None
+                    return None, "Gemini REST returned empty response", None
+                elif resp.status == 429:
+                    await set_rate_limit("gemini", time.time() + 60)
+                    return None, "Gemini rate limited (429)", 60
                 else:
                     msg = await resp.text()
                     retry_match = re.search(r"retry_delay\s*{\s*seconds:\s*(\d+)\s*}", msg, re.IGNORECASE)
                     if retry_match:
                         retry_after = int(retry_match.group(1))
-                        gemini_disabled_until = time.time() + retry_after
+                        await set_rate_limit("gemini", time.time() + retry_after)
                         return None, f"HTTP {resp.status}: Rate limited", retry_after
-                    return None, f"HTTP {resp.status}: {msg[:200]}", None
+                    return None, f"HTTP {resp.status}: {msg[:150]}", None
+    except asyncio.TimeoutError:
+        return None, "Gemini REST timeout", None
+    except aiohttp.ClientError as e:
+        return None, f"Gemini connection error: {str(e)[:80]}", None
     except Exception as e:
         return None, f"Gemini REST error: {str(e)[:100]}", None
 
 
-async def call_ollama_cloud(prompt: str, _for_analysis: bool = False) -> Tuple[Optional[str], Optional[str]]:
-    """Call Ollama Cloud API."""
-    global cloud_disabled_until
-    
+async def call_ollama_cloud(prompt: str, _for_analysis: bool = False, scan_id: str = None) -> Tuple[Optional[str], Optional[str]]:
+    """Call Ollama Cloud API using async HTTP."""
     if not OLLAMA_CLOUD_HOST:
-        return None, "OLLAMA_CLOUD_HOST not configured"
+        return None, "OLLAMA_CLOUD_HOST not configured in config.yaml"
     
-    if time.time() < cloud_disabled_until:
+    if await is_rate_limited("cloud"):
         return None, "Ollama Cloud temporarily disabled due to errors"
     
-    try:
-        from ollama import Client as OllamaClient
-        
-        client_kwargs = {"host": OLLAMA_CLOUD_HOST}
-        if OLLAMA_API_KEY:
-            client_kwargs["headers"] = {"Authorization": OLLAMA_API_KEY}
-        
-        client = OllamaClient(**client_kwargs)
-        errors = []
-        
-        for model_name in OLLAMA_CLOUD_MODELS:
-            for attempt in range(1, CLOUD_MAX_RETRIES + 1):
-                try:
-                    logger.info(f"[Ollama Cloud] Trying {model_name} (attempt {attempt})")
-                    response = client.chat(
-                        model=model_name,
-                        messages=[{"role": "user", "content": prompt}]
+    import httpx
+    
+    log_llm_call("ollama_cloud", scan_id or "unknown", len(prompt), False)
+    
+    errors = []
+    
+    for model_name in OLLAMA_CLOUD_MODELS:
+        for attempt in range(1, CLOUD_MAX_RETRIES + 1):
+            try:
+                logger.info(f"[Ollama Cloud] Trying {model_name} (attempt {attempt})")
+                
+                headers = {"Content-Type": "application/json"}
+                if OLLAMA_API_KEY:
+                    headers["Authorization"] = f"Bearer {OLLAMA_API_KEY}"
+                
+                async with httpx.AsyncClient(timeout=httpx.Timeout(120, connect=15)) as client:
+                    payload = {
+                        "model": model_name,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "stream": False
+                    }
+                    
+                    response = await client.post(
+                        f"{OLLAMA_CLOUD_HOST}/api/chat",
+                        json=payload,
+                        headers=headers
                     )
-                    logger.info(f"[Ollama Cloud] Success with {model_name}")
-                    return response["message"]["content"], None
-                except Exception as e:
-                    errors.append(f"{model_name}: {str(e)[:60]}")
-                    if attempt < CLOUD_MAX_RETRIES:
-                        await asyncio.sleep(3 ** attempt)
-                    continue
-        
-        return None, f"All cloud models failed: {'; '.join(errors[-3:])}"
-    except ImportError:
-        return None, "Ollama SDK not installed (pip install ollama)"
-    except Exception as e:
-        return None, f"Ollama Cloud error: {str(e)[:100]}"
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        content = result.get("message", {}).get("content", "")
+                        if content:
+                            logger.info(f"[Ollama Cloud] Success with {model_name}")
+                            return content, None
+                        else:
+                            errors.append(f"{model_name}: empty response")
+                    elif response.status_code == 429:
+                        await set_rate_limit("cloud", time.time() + 60)
+                        errors.append(f"{model_name}: rate limited")
+                        break
+                    elif response.status_code == 404:
+                        errors.append(f"{model_name}: model not found")
+                        break
+                    else:
+                        errors.append(f"{model_name}: HTTP {response.status_code}")
+                        
+            except httpx.TimeoutException:
+                errors.append(f"{model_name}: timeout")
+            except httpx.ConnectError:
+                errors.append(f"{model_name}: connection failed")
+            except Exception as e:
+                errors.append(f"{model_name}: {str(e)[:50]}")
+            
+            if attempt < CLOUD_MAX_RETRIES:
+                await asyncio.sleep(2 ** attempt)  # Exponential backoff
+    
+    return None, f"Cloud models failed: {'; '.join(errors[-3:])}"
 
 
 async def call_ollama_local(prompt: str, scan_id: str = None, timeout: int = 120) -> Tuple[Optional[str], Optional[str]]:
-    """Call Local Ollama."""
+    """Call Local Ollama with optimized timeout and comprehensive error handling."""
+    import httpx
+    
+    # First check if Ollama server is running
     try:
-        from ollama import Client
-        import httpx
-        
-        try:
-            async with httpx.AsyncClient(timeout=2) as client:
-                await client.get(OLLAMA_LOCAL_HOST)
-        except Exception:
-            return None, f"Local Ollama not running at {OLLAMA_LOCAL_HOST}"
-        
-        available = set()
-        try:
-            async with httpx.AsyncClient(timeout=3) as client:
-                models_resp = await client.get(f"{OLLAMA_LOCAL_HOST}/api/tags")
-                if models_resp.status_code == 200:
-                    for m in models_resp.json().get("models", []):
-                        if m.get("name"):
-                            available.add(m["name"])
-        except:
-            pass
-        
-        ollama_client = Client(host=OLLAMA_LOCAL_HOST)
-        errors = []
-        
-        log_llm_call("ollama_local", scan_id or "unknown", len(prompt), False)
-        
-        for model_name in OLLAMA_LOCAL_MODELS:
-            if available and model_name not in available:
-                errors.append(f"{model_name} not available")
-                continue
-            try:
-                def _sync_ollama_call():
-                    return ollama_client.chat(
-                        model=model_name,
-                        messages=[
-                            {"role": "system", "content": "You are a cybersecurity analyst. Answer questions based ONLY on the provided scan data. Always quote exact numbers from the QUICK REFERENCE section when asked about counts."},
-                            {"role": "user", "content": prompt}
-                        ],
-                        options={
-                            "num_ctx": 32768,
-                            "temperature": 0.1,
-                        }
-                    )
-                
-                loop = asyncio.get_event_loop()
-                response = await asyncio.wait_for(
-                    loop.run_in_executor(None, _sync_ollama_call),
-                    timeout=timeout + 10
-                )
-                logger.info(f"[Ollama Local] Success with {model_name}")
-                return response["message"]["content"], None
-            except asyncio.TimeoutError:
-                errors.append(f"{model_name}: timeout after {timeout}s")
-                continue
-            except Exception as e:
-                errors.append(f"{model_name}: {str(e)[:50]}")
-                continue
-        return None, f"Local models failed: {'; '.join(errors)}"
-    except ImportError:
-        return None, "Ollama SDK not installed (pip install ollama)"
+        async with httpx.AsyncClient(timeout=5) as client:
+            health_resp = await client.get(OLLAMA_LOCAL_HOST)
+            if health_resp.status_code != 200:
+                return None, f"Ollama server unhealthy (status {health_resp.status_code})"
+    except httpx.ConnectError:
+        return None, f"Local Ollama not running at {OLLAMA_LOCAL_HOST}. Start it with: ollama serve"
+    except httpx.TimeoutException:
+        return None, f"Ollama server timeout - may be overloaded"
     except Exception as e:
-        return None, f"Local Ollama error: {str(e)[:100]}"
+        return None, f"Cannot connect to Ollama: {str(e)[:80]}"
+    
+    # Get available models
+    available = set()
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            models_resp = await client.get(f"{OLLAMA_LOCAL_HOST}/api/tags")
+            if models_resp.status_code == 200:
+                for m in models_resp.json().get("models", []):
+                    name = m.get("name", "")
+                    if name:
+                        available.add(name)
+                        # Also add without :latest suffix for matching
+                        if ":" in name:
+                            available.add(name.split(":")[0])
+    except Exception as e:
+        logger.warning(f"Could not list Ollama models: {e}")
+    
+    if not available:
+        return None, "No models available in Ollama. Run: ollama pull llama3.2:3b"
+    
+    log_llm_call("ollama_local", scan_id or "unknown", len(prompt), False)
+    
+    # Build model priority list - configured models first, then any available
+    models_to_try = []
+    for model in OLLAMA_LOCAL_MODELS:
+        if model in available or model.split(":")[0] in available:
+            models_to_try.append(model)
+    
+    # Add any available model as fallback
+    for avail_model in sorted(available):
+        if avail_model not in models_to_try and ":" in avail_model:
+            models_to_try.append(avail_model)
+    
+    if not models_to_try:
+        return None, f"Configured models not available. Have: {', '.join(list(available)[:5])}"
+    
+    errors = []
+    
+    for model_name in models_to_try[:3]:  # Try up to 3 models
+        try:
+            logger.info(f"[Ollama Local] Trying model: {model_name}")
+            
+            # Use httpx for async HTTP call to Ollama API directly
+            async with httpx.AsyncClient(timeout=httpx.Timeout(timeout, connect=10)) as client:
+                payload = {
+                    "model": model_name,
+                    "messages": [
+                        {"role": "system", "content": "You are a cybersecurity analyst. Answer based ONLY on provided scan data. Quote exact numbers when asked about counts."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "stream": False,
+                    "options": {
+                        "num_ctx": 4096,  # Conservative context for memory safety
+                        "temperature": 0.1,
+                        "num_predict": 2048,
+                    }
+                }
+                
+                response = await client.post(
+                    f"{OLLAMA_LOCAL_HOST}/api/chat",
+                    json=payload
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    content = result.get("message", {}).get("content", "")
+                    if content:
+                        logger.info(f"[Ollama Local] Success with {model_name}")
+                        return content, None
+                    else:
+                        errors.append(f"{model_name}: empty response")
+                elif response.status_code == 404:
+                    errors.append(f"{model_name}: model not found")
+                else:
+                    error_text = response.text[:100]
+                    # Check for memory errors in response
+                    if "alloc" in error_text.lower() or "memory" in error_text.lower():
+                        errors.append(f"{model_name}: out of memory - use smaller model")
+                        logger.warning(f"[Ollama Local] Memory error with {model_name}")
+                    else:
+                        errors.append(f"{model_name}: HTTP {response.status_code}")
+                        
+        except httpx.TimeoutException:
+            errors.append(f"{model_name}: timeout after {timeout}s")
+            logger.warning(f"[Ollama Local] Timeout with {model_name}")
+        except httpx.ConnectError:
+            errors.append(f"{model_name}: connection lost")
+        except Exception as e:
+            err_str = str(e).lower()
+            if "alloc" in err_str or "memory" in err_str or "buffer" in err_str:
+                errors.append(f"{model_name}: memory error - try smaller model")
+                logger.warning(f"[Ollama Local] Memory error: {e}")
+            else:
+                errors.append(f"{model_name}: {str(e)[:60]}")
+            continue
+    
+    return None, f"Local models failed: {'; '.join(errors[:3])}"
 
 
 def normalize_analysis(raw: Dict) -> Dict:
@@ -399,8 +524,8 @@ async def analyze_chunk_with_llm(chunk: List[Dict], chunk_idx: int, max_tokens: 
     prompt_tokens = estimate_tokens(prompt)
     logger.info(f"[Chunk {chunk_idx}] Prompt size: {len(prompt)} chars (~{prompt_tokens} tokens)")
     
-    # 1. Try Gemini
-    if GEMINI_API_KEY and time.time() >= gemini_disabled_until:
+    # 1. Try Gemini (thread-safe rate limit check)
+    if GEMINI_API_KEY and not await is_rate_limited("gemini"):
         logger.info(f"[Chunk {chunk_idx}] Trying Gemini...")
         for attempt in range(1, GEMINI_MAX_RETRIES + 1):
             text, err, retry_after = await call_gemini(prompt, _for_analysis=True)
@@ -413,10 +538,10 @@ async def analyze_chunk_with_llm(chunk: List[Dict], chunk_idx: int, max_tokens: 
             if retry_after:
                 break
             if attempt < GEMINI_MAX_RETRIES:
-                await asyncio.sleep(GEMINI_BACKOFF ** attempt)
+                await asyncio.sleep(min(GEMINI_BACKOFF ** attempt, 60))  # Cap at 60s
     
-    # 2. Try Ollama Cloud
-    if OLLAMA_API_KEY and time.time() >= cloud_disabled_until:
+    # 2. Try Ollama Cloud (thread-safe rate limit check)
+    if OLLAMA_API_KEY and not await is_rate_limited("cloud"):
         logger.info(f"[Chunk {chunk_idx}] Trying Ollama Cloud...")
         log_llm_call("ollama_cloud", f"chunk_{chunk_idx}", len(prompt), False)
         text, err = await call_ollama_cloud(prompt, _for_analysis=True)
@@ -535,9 +660,9 @@ async def analyze_tools_findings_with_llm(tools_findings: Dict, scan_id: str) ->
     
     logger.info(f"[Tools Analysis] Analyzing tools findings for scan {scan_id}")
     
-    # Try each LLM provider in order
+    # Try each LLM provider in order (thread-safe rate limit checks)
     # 1. Try Gemini
-    if GEMINI_API_KEY and time.time() >= gemini_disabled_until:
+    if GEMINI_API_KEY and not await is_rate_limited("gemini"):
         logger.info(f"[Tools Analysis] Trying Gemini...")
         text, err, retry_after = await call_gemini(prompt, _for_analysis=True, scan_id=scan_id)
         if text:
@@ -548,7 +673,7 @@ async def analyze_tools_findings_with_llm(tools_findings: Dict, scan_id: str) ->
         logger.warning(f"[Gemini] Tools analysis failed: {err}")
     
     # 2. Try Ollama Cloud
-    if OLLAMA_API_KEY and time.time() >= cloud_disabled_until:
+    if OLLAMA_API_KEY and not await is_rate_limited("cloud"):
         logger.info(f"[Tools Analysis] Trying Ollama Cloud...")
         text, err = await call_ollama_cloud(prompt, _for_analysis=True)
         if text:

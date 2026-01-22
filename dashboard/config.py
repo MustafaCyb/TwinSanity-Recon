@@ -273,22 +273,23 @@ OLLAMA_CLOUD_MODEL = CLOUD_CONFIG.get('model', 'deepseek-v3.1:671b')
 OLLAMA_CLOUD_MODELS = CLOUD_CONFIG.get('models', [OLLAMA_CLOUD_MODEL])
 CLOUD_MAX_RETRIES = CLOUD_CONFIG.get('max_retries', 4)
 
-# Local Ollama settings
+# Local Ollama settings - using smaller default models for better compatibility
 LOCAL_CONFIG = PROVIDERS_CONFIG.get('local', LLM_CONFIG.get('local', {}))
 OLLAMA_LOCAL_HOST = LOCAL_CONFIG.get('host', 'http://127.0.0.1:11434')
 LOCAL_MODELS = LOCAL_CONFIG.get('models', {})
 if isinstance(LOCAL_MODELS, dict):
-    OLLAMA_LOCAL_MODEL = LOCAL_MODELS.get('default', 'llama3.1:latest')
-    OLLAMA_REASONING_MODEL = LOCAL_MODELS.get('reasoning', 'deepseek-r1:8b')
+    # Default to smaller, more memory-efficient models
+    OLLAMA_LOCAL_MODEL = LOCAL_MODELS.get('default', 'llama3.2:3b')
+    OLLAMA_REASONING_MODEL = LOCAL_MODELS.get('reasoning', 'deepseek-r1:1.5b')
 else:
-    OLLAMA_LOCAL_MODEL = LOCAL_MODELS[0] if LOCAL_MODELS else 'llama3.1:latest'
-    OLLAMA_REASONING_MODEL = 'deepseek-r1:8b'
+    OLLAMA_LOCAL_MODEL = LOCAL_MODELS[0] if LOCAL_MODELS else 'llama3.2:3b'
+    OLLAMA_REASONING_MODEL = 'deepseek-r1:1.5b'
 OLLAMA_LOCAL_MODELS = [OLLAMA_LOCAL_MODEL]
 
 # Analysis settings
 ANALYSIS_CONFIG = LLM_CONFIG.get('analysis', {})
 AI_ANALYSIS_ENABLED = ANALYSIS_CONFIG.get('enabled', False)
-ANALYSIS_CHUNK_SIZE = ANALYSIS_CONFIG.get('chunk_size', 18)
+ANALYSIS_CHUNK_SIZE = ANALYSIS_CONFIG.get('chunk_size', 30)  # Increased for faster AI analysis
 
 # Reasoning/Caching settings
 REASONING_CONFIG = LLM_CONFIG.get('reasoning', {})

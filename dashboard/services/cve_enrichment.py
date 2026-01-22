@@ -91,27 +91,34 @@ async def fetch_epss_scores(cve_ids: List[str]) -> Dict[str, dict]:
     epss_data = {}
     
     try:
-        # EPSS API accepts multiple CVEs
-        # Batch in groups of 100
-        for i in range(0, len(cve_ids), 100):
-            batch = cve_ids[i:i+100]
-            cve_param = ",".join(batch)
-            url = f"https://api.first.org/data/v1/epss?cve={cve_param}"
-            
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, timeout=30) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        for item in data.get("data", []):
-                            cve_id = item.get("cve")
-                            if cve_id:
-                                epss_data[cve_id] = {
-                                    "epss": float(item.get("epss", 0)),
-                                    "percentile": float(item.get("percentile", 0))
-                                }
-            
-            # Rate limit
-            await asyncio.sleep(0.5)
+        # Create single session for all requests (prevents connection leak)
+        timeout = aiohttp.ClientTimeout(total=60, connect=10)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            # EPSS API accepts multiple CVEs
+            # Batch in groups of 100
+            for i in range(0, len(cve_ids), 100):
+                batch = cve_ids[i:i+100]
+                cve_param = ",".join(batch)
+                url = f"https://api.first.org/data/v1/epss?cve={cve_param}"
+                
+                try:
+                    async with session.get(url) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            for item in data.get("data", []):
+                                cve_id = item.get("cve")
+                                if cve_id:
+                                    epss_data[cve_id] = {
+                                        "epss": float(item.get("epss", 0)),
+                                        "percentile": float(item.get("percentile", 0))
+                                    }
+                except asyncio.TimeoutError:
+                    logger.warning(f"EPSS fetch timeout for batch starting at {i}")
+                except aiohttp.ClientError as e:
+                    logger.warning(f"EPSS fetch error for batch: {e}")
+                
+                # Rate limit
+                await asyncio.sleep(0.5)
         
         logger.info(f"EPSS scores fetched for {len(epss_data)} CVEs")
         

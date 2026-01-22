@@ -93,6 +93,15 @@ class ToastManager {
     show(type, title, message, duration = 4000) {
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
+        
+        // Escape HTML to prevent XSS
+        const escapeHtml = (text) => {
+            if (!text) return '';
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        };
+        const safeTitle = escapeHtml(title);
+        const safeMessage = escapeHtml(message);
 
         const icons = {
             success: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
@@ -104,8 +113,8 @@ class ToastManager {
         toast.innerHTML = `
             <div class="toast-icon">${icons[type]}</div>
             <div class="toast-content">
-                <div class="toast-title">${title}</div>
-                ${message ? `<div class="toast-message">${message}</div>` : ''}
+                <div class="toast-title">${safeTitle}</div>
+                ${safeMessage ? `<div class="toast-message">${safeMessage}</div>` : ''}
             </div>
             <button class="toast-close">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -658,8 +667,8 @@ class TwinSanityDashboard {
         this.updateProgress('Scan complete! Loading results...', 100);
         this.updateConnectionStatus('connected');  // Show "Live" briefly
 
-        // Wait a moment for database to finalize
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Wait for database to finalize writes
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
         // Refresh session list first so new scan appears
         await this.loadScans();
@@ -667,10 +676,14 @@ class TwinSanityDashboard {
         // Load the completed scan's results
         if (this.currentScanId) {
             await this.loadScan(this.currentScanId);
+            
             // Explicitly reload tools findings after scan complete
             loadToolsFindings(this.currentScanId);
-            // Reload AI report if analysis was enabled
+            
+            // Reload AI report with retry - AI analysis may still be saving
             await this.loadAIReport(this.currentScanId);
+            // Second attempt after brief delay in case AI was still writing
+            setTimeout(() => this.loadAIReport(this.currentScanId), 2000);
         }
 
         this.enableChat();
@@ -715,6 +728,10 @@ class TwinSanityDashboard {
             case 'status':
                 this.updateProgress(data.message, data.progress || 0);
                 this.updateConnectionStatus('scanning');
+                // Update phase info if available
+                if (data.phase) {
+                    this.updatePhaseIndicator(data.phase, data.phase_num, data.total_phases);
+                }
                 break;
 
             case 'log':
@@ -723,6 +740,12 @@ class TwinSanityDashboard {
                 if (data.message && (data.message.includes('✅') || data.message.includes('Found'))) {
                     this.addMessage('ai', data.message);
                 }
+                // Auto-reload AI report when AI analysis completion is logged
+                if (data.message && data.message.includes('AI analysis') && 
+                    (data.message.includes('complete') || data.message.includes('saved'))) {
+                    console.log('AI analysis completion detected in log - reloading report');
+                    setTimeout(() => this.loadAIReport(this.currentScanId), 1000);
+                }
                 break;
 
             case 'progress':
@@ -730,6 +753,20 @@ class TwinSanityDashboard {
                 this.updateConnectionStatus('scanning');
                 break;
 
+            // Enhanced phase tracking messages
+            case 'phase_start':
+                this.handlePhaseStart(data);
+                break;
+            
+            case 'phase_progress':
+                this.handlePhaseProgress(data);
+                break;
+            
+            case 'phase_complete':
+                this.handlePhaseComplete(data);
+                break;
+
+            // Enhanced discovery messages
             case 'subdomain_found':
                 this.updateProgress(`Found: ${data.subdomain}`, data.progress || 30);
                 // Real-time subdomain count update
@@ -739,14 +776,68 @@ class TwinSanityDashboard {
                 }
                 break;
 
-            case 'host_scanned':
-                this.updateProgress(`Scanning: ${data.hostname}`, data.progress || 60);
-                if (data.host_data) {
-                    this.addHostToUI(data.host_data);
-                    // Update IP count in real-time
-                    const currentIPs = parseInt(this.elements.statIPs?.textContent || '0');
-                    this.animateStatValue(this.elements.statIPs, currentIPs + 1);
+            case 'subdomain_batch':
+                // Handle batch subdomain update
+                if (data.count && this.elements.statSubs) {
+                    this.animateStatValue(this.elements.statSubs, data.count);
                 }
+                break;
+
+            case 'ip_resolved':
+                // Handle IP resolution event
+                if (this.elements.statIPs) {
+                    this.animateStatValue(this.elements.statIPs, data.total || data.index);
+                }
+                break;
+
+            case 'host_scanned':
+                this.updateProgress(`Scanning: ${data.ip || data.hostname}`, data.progress || 60);
+                if (data.ports_count > 0) {
+                    // Show port/vuln info in toast for significant hosts
+                    if (data.vulns_count > 0) {
+                        toast.info('Host Found', `${data.ip}: ${data.ports_count} ports, ${data.vulns_count} vulns`);
+                    }
+                }
+                // Update IP count in real-time
+                const currentIPs = parseInt(this.elements.statIPs?.textContent || '0');
+                this.animateStatValue(this.elements.statIPs, currentIPs + 1);
+                break;
+
+            // CVE/Vulnerability messages
+            case 'cve_found':
+                this.handleCVEFound(data);
+                break;
+
+            case 'cve_batch':
+                // Update CVE count from batch
+                if (data.count && this.elements.statCVEs) {
+                    this.animateStatValue(this.elements.statCVEs, data.count);
+                }
+                if (data.critical && this.elements.statCrit) {
+                    this.animateStatValue(this.elements.statCrit, data.critical);
+                }
+                break;
+
+            // Tool result messages
+            case 'httpx_result':
+                this.handleHTTPXResult(data);
+                break;
+
+            case 'nuclei_result':
+                this.handleNucleiResult(data);
+                break;
+
+            case 'xss_result':
+                this.handleXSSResult(data);
+                break;
+
+            case 'api_endpoint':
+                this.handleAPIEndpoint(data);
+                break;
+
+            // Statistics update
+            case 'stats_update':
+                this.handleStatsUpdate(data.stats);
                 break;
 
             case 'ai_analysis':
@@ -754,8 +845,16 @@ class TwinSanityDashboard {
                 this.handleAIAnalysisProgress(data);
                 break;
 
+            case 'ai_summary':
+                this.handleAISummary(data);
+                break;
+
             case 'complete':
                 this.handleScanComplete();
+                break;
+
+            case 'cancelled':
+                this.handleScanCancelled(data);
                 break;
 
             case 'error':
@@ -766,6 +865,140 @@ class TwinSanityDashboard {
                 toast.error('Scan Error', data.message);
                 this.enableScanButton();
                 break;
+        }
+    }
+
+    // Enhanced phase handling methods
+    handlePhaseStart(data) {
+        const phaseName = data.phase_name || 'Scanning';
+        const phaseNum = data.phase_num || 1;
+        const totalPhases = data.total_phases || 1;
+        
+        this.updateProgress(data.description || `Starting ${phaseName}...`, 0);
+        this.updatePhaseIndicator(phaseName, phaseNum, totalPhases);
+        this.updateConnectionStatus('scanning');
+        
+        // Add phase start to chat log
+        this.addMessage('system', `📍 **Phase ${phaseNum}/${totalPhases}:** ${phaseName}`);
+    }
+
+    handlePhaseProgress(data) {
+        // Guard against undefined values to prevent "undefined/undefined" display
+        const phaseName = data.phase_name || 'Processing';
+        const current = data.current ?? 0;
+        const total = data.total ?? 0;
+        
+        let progressText;
+        if (total > 0) {
+            progressText = data.current_item 
+                ? `${phaseName}: ${current}/${total} - ${data.current_item}`
+                : `${phaseName}: ${current}/${total}`;
+        } else if (data.current_item) {
+            progressText = `${phaseName}: ${data.current_item}`;
+        } else {
+            progressText = `${phaseName}...`;
+        }
+        this.updateProgress(progressText, data.progress || 0);
+    }
+
+    handlePhaseComplete(data) {
+        const phaseName = data.phase_name || 'Phase';
+        const resultsCount = data.results_count ?? 0;
+        const durationSec = data.duration_ms ? (data.duration_ms / 1000).toFixed(1) : '?';
+        this.addMessage('ai', `✅ ${phaseName} complete: ${resultsCount} results (${durationSec}s)`);
+    }
+
+    handleCVEFound(data) {
+        // Update CVE counter
+        const currentCVEs = parseInt(this.elements.statCVEs?.textContent || '0');
+        if (this.elements.statCVEs) {
+            this.animateStatValue(this.elements.statCVEs, currentCVEs + 1);
+        }
+        
+        // Update critical counter for critical CVEs
+        if (data.severity === 'critical' && this.elements.statCrit) {
+            const currentCrit = parseInt(this.elements.statCrit?.textContent || '0');
+            this.animateStatValue(this.elements.statCrit, currentCrit + 1);
+        }
+        
+        // Show toast for high/critical CVEs
+        if (data.severity === 'critical' || data.severity === 'high') {
+            toast.warning('CVE Found', `${data.cve_id} (${data.severity.toUpperCase()}) on ${data.ip}`);
+        }
+    }
+
+    handleHTTPXResult(data) {
+        // Could add to a live hosts panel or show notification
+        console.log('HTTPX Result:', data);
+    }
+
+    handleNucleiResult(data) {
+        // Show toast for significant findings
+        if (data.severity === 'critical' || data.severity === 'high') {
+            toast.warning('Vulnerability Found', `[${data.severity.toUpperCase()}] ${data.template_id} on ${data.host}`);
+        }
+    }
+
+    handleXSSResult(data) {
+        toast.warning('XSS Found', `Parameter: ${data.parameter} at ${data.url?.substring(0, 50)}...`);
+    }
+
+    handleAPIEndpoint(data) {
+        console.log('API Endpoint:', data);
+    }
+
+    handleStatsUpdate(stats) {
+        if (!stats) return;
+        
+        // Update all stat counters
+        if (stats.total_subdomains !== undefined && this.elements.statSubs) {
+            this.animateStatValue(this.elements.statSubs, stats.total_subdomains);
+        }
+        if (stats.total_ips !== undefined && this.elements.statIPs) {
+            this.animateStatValue(this.elements.statIPs, stats.total_ips);
+        }
+        if (stats.total_cves !== undefined && this.elements.statCVEs) {
+            this.animateStatValue(this.elements.statCVEs, stats.total_cves);
+        }
+        if (stats.critical_cves !== undefined && this.elements.statCrit) {
+            this.animateStatValue(this.elements.statCrit, stats.critical_cves);
+        }
+    }
+
+    handleAISummary(data) {
+        // Show AI summary completion
+        this.addMessage('ai', `🤖 AI Analysis Complete!\n• CVEs analyzed: ${data.cves_analyzed}\n• Chunks processed: ${data.chunks_processed}\n• Provider: ${data.provider}`);
+        
+        // Show badge on AI Report tab
+        if (this.elements.aiReportBadge) {
+            this.elements.aiReportBadge.classList.remove('hidden');
+            this.elements.aiReportBadge.textContent = 'NEW';
+        }
+        
+        toast.success('AI Analysis', 'Analysis complete - check AI Report tab');
+    }
+
+    handleScanCancelled(data) {
+        this.isScanning = false;
+        this.stopBackupPolling();
+        this.updateProgress('Scan cancelled', 0);
+        this.updateConnectionStatus('disconnected');
+        toast.warning('Scan Cancelled', data.message || 'Scan was cancelled by user');
+        this.enableScanButton();
+    }
+
+    updatePhaseIndicator(phase, phaseNum, totalPhases) {
+        // Update phase indicator in UI if element exists
+        const phaseEl = document.getElementById('currentPhase');
+        if (phaseEl) {
+            phaseEl.textContent = `Phase ${phaseNum}/${totalPhases}: ${phase}`;
+        }
+        
+        // Update progress text with phase info
+        const progressText = this.elements.progressText;
+        if (progressText && phaseNum && totalPhases) {
+            // Store phase info for reference
+            this.currentPhase = { name: phase, num: phaseNum, total: totalPhases };
         }
     }
 
@@ -915,7 +1148,8 @@ class TwinSanityDashboard {
             'src_urlscan': 'urlscan',
             'src_webarchive': 'webarchive',
             'src_bufferover': 'bufferover',
-            'src_certspotter': 'certspotter'
+            'src_certspotter': 'certspotter',
+            'src_securitytrails': 'securitytrails'
         };
 
         const cveMap = {
@@ -2380,12 +2614,20 @@ class TwinSanityDashboard {
 
     formatMessage(content) {
         // Enhanced markdown-like formatting for AI responses
-        let formatted = this.escapeHtml(content);
-
-        // Strip <think>...</think> tags (DeepSeek reasoning mode)
-        // These should not be shown to users in the chat
+        
+        // FIRST: Strip <think>...</think> tags (DeepSeek reasoning mode)
+        // Must be done BEFORE escaping HTML to properly match the tags
+        let cleaned = content || '';
+        cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '');
+        cleaned = cleaned.replace(/<\|think\|>[\s\S]*?<\|end_think\|>/gi, ''); // Alternative format
+        cleaned = cleaned.replace(/\[think\][\s\S]*?\[\/think\]/gi, ''); // Bracket format
+        cleaned = cleaned.trim();
+        
+        // Now escape HTML
+        let formatted = this.escapeHtml(cleaned);
+        
+        // Also catch any escaped versions that slipped through
         formatted = formatted.replace(/&lt;think&gt;[\s\S]*?&lt;\/think&gt;/gi, '');
-        formatted = formatted.replace(/<think>[\s\S]*?<\/think>/gi, '');
         formatted = formatted.trim();
 
         // Code blocks (triple backticks) - process BEFORE other formatting
@@ -2451,9 +2693,19 @@ class TwinSanityDashboard {
     }
 
     updateProgress(status, percent) {
-        this.elements.statusText.textContent = status;
-        this.elements.progressText.textContent = `${Math.round(percent)}%`;
-        this.elements.progressFill.style.width = `${percent}%`;
+        // Guard against undefined/null values
+        const safeStatus = status ?? 'Processing...';
+        const safePercent = Math.round(percent ?? 0);
+        
+        if (this.elements.statusText) {
+            this.elements.statusText.textContent = safeStatus;
+        }
+        if (this.elements.progressText) {
+            this.elements.progressText.textContent = `${safePercent}%`;
+        }
+        if (this.elements.progressFill) {
+            this.elements.progressFill.style.width = `${safePercent}%`;
+        }
     }
 
     showResults() {
@@ -2927,6 +3179,13 @@ function switchReportTab(tab) {
     }
 }
 
+// HTML escape helper for standalone function context
+function escapeHtmlTools(text) {
+    if (!text) return '';
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
 // Load Tools Findings from API
 async function loadToolsFindings(scanId) {
     if (!scanId) return;
@@ -2956,11 +3215,11 @@ async function loadToolsFindings(scanId) {
             if (aliveHostsList && data.alive_hosts?.items) {
                 aliveHostsList.innerHTML = data.alive_hosts.items.map(h => `
                     <div class="finding-card">
-                        <a href="${h.url}" target="_blank" class="finding-url">${h.url}</a>
+                        <a href="${escapeHtmlTools(h.url)}" target="_blank" rel="noopener noreferrer" class="finding-url">${escapeHtmlTools(h.url)}</a>
                         <div class="finding-meta">
-                            <span class="badge">${h.status_code || 200}</span>
-                            ${h.title ? `<span class="finding-title">${h.title}</span>` : ''}
-                            ${h.technologies?.length ? `<span class="tech-tags">${h.technologies.slice(0, 3).join(', ')}</span>` : ''}
+                            <span class="badge">${parseInt(h.status_code) || 200}</span>
+                            ${h.title ? `<span class="finding-title">${escapeHtmlTools(h.title)}</span>` : ''}
+                            ${h.technologies?.length ? `<span class="tech-tags">${h.technologies.slice(0, 3).map(t => escapeHtmlTools(t)).join(', ')}</span>` : ''}
                         </div>
                     </div>
                 `).join('');
@@ -2974,8 +3233,8 @@ async function loadToolsFindings(scanId) {
                     <div class="harvested-urls-scroll" style="max-height: 400px; overflow-y: auto;">
                         ${urlItems.map(u => `
                             <div class="finding-item" style="display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <a href="${u.url}" target="_blank" class="finding-url-small" style="flex: 1; word-break: break-all; font-family: monospace; font-size: 0.85rem;">${u.url}</a>
-                                <span class="badge-source" style="font-size: 0.7rem;">${u.source || ''}</span>
+                                <a href="${escapeHtmlTools(u.url)}" target="_blank" rel="noopener noreferrer" class="finding-url-small" style="flex: 1; word-break: break-all; font-family: monospace; font-size: 0.85rem;">${escapeHtmlTools(u.url)}</a>
+                                <span class="badge-source" style="font-size: 0.7rem;">${escapeHtmlTools(u.source || '')}</span>
                                 ${u.has_params ? '<span class="badge-param" style="font-size: 0.7rem;">params</span>' : ''}
                             </div>
                         `).join('')}
@@ -2988,9 +3247,9 @@ async function loadToolsFindings(scanId) {
             if (nucleiFindingsList && data.nuclei_findings?.items) {
                 nucleiFindingsList.innerHTML = data.nuclei_findings.items.map(f => `
                     <div class="finding-item vuln-item">
-                        <span class="severity-badge ${f.severity || 'medium'}">${(f.severity || 'medium').toUpperCase()}</span>
-                        <span class="finding-name">${f.name || f.template_id || 'Unknown'}</span>
-                        <a href="${f.host}" target="_blank" class="finding-host">${f.host}</a>
+                        <span class="severity-badge ${escapeHtmlTools(f.severity || 'medium')}">${escapeHtmlTools((f.severity || 'medium').toUpperCase())}</span>
+                        <span class="finding-name">${escapeHtmlTools(f.name || f.template_id || 'Unknown')}</span>
+                        <a href="${escapeHtmlTools(f.host)}" target="_blank" rel="noopener noreferrer" class="finding-host">${escapeHtmlTools(f.host)}</a>
                     </div>
                 `).join('');
             }
@@ -3002,8 +3261,8 @@ async function loadToolsFindings(scanId) {
                     data.xss_findings.items.map(x => `
                         <div class="finding-item xss-item">
                             <span class="severity-badge high">XSS</span>
-                            <span class="finding-param">Param: ${x.parameter}</span>
-                            <a href="${x.url}" target="_blank" class="finding-url-small">${x.url.slice(0, 60)}...</a>
+                            <span class="finding-param">Param: ${escapeHtmlTools(x.parameter)}</span>
+                            <a href="${escapeHtmlTools(x.url)}" target="_blank" rel="noopener noreferrer" class="finding-url-small">${escapeHtmlTools((x.url || '').slice(0, 60))}...</a>
                         </div>
                     `).join('') : '<div class="no-findings">No XSS vulnerabilities found</div>';
             }
@@ -3014,9 +3273,9 @@ async function loadToolsFindings(scanId) {
                 apiEndpointsList.innerHTML = data.api_discoveries.items.length > 0 ?
                     data.api_discoveries.items.map(a => `
                         <div class="finding-item api-item">
-                            <span class="badge-status">${a.status_code || 200}</span>
-                            <a href="${a.url}" target="_blank" class="finding-url-small">${a.url}</a>
-                            ${a.content_type ? `<span class="content-type">${a.content_type}</span>` : ''}
+                            <span class="badge-status">${parseInt(a.status_code) || 200}</span>
+                            <a href="${escapeHtmlTools(a.url)}" target="_blank" rel="noopener noreferrer" class="finding-url-small">${escapeHtmlTools(a.url)}</a>
+                            ${a.content_type ? `<span class="content-type">${escapeHtmlTools(a.content_type)}</span>` : ''}
                         </div>
                     `).join('') : '<div class="no-findings">No API endpoints discovered</div>';
             }
@@ -3879,6 +4138,13 @@ async function loadPublicScans() {
 
 function renderPublicScans(scans) {
     const grid = document.getElementById('publicScansGrid');
+    
+    // HTML escape helper to prevent XSS
+    const escapeHtml = (text) => {
+        if (!text) return '';
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return String(text).replace(/[&<>"']/g, m => map[m]);
+    };
 
     if (!scans || scans.length === 0) {
         grid.innerHTML = '<div class="empty-state-small">No public scans available yet.</div>';
@@ -3888,17 +4154,17 @@ function renderPublicScans(scans) {
     grid.innerHTML = scans.map(scan => {
         const date = new Date(scan.created_at).toLocaleDateString();
         const ownerName = scan.owner_name || 'User ' + scan.user_id;
-        return '<div class="public-scan-card" onclick="viewPublicScan(\'' + scan.id + '\')">' +
+        return '<div class="public-scan-card" onclick="viewPublicScan(\'' + escapeHtml(scan.id) + '\')">' +
             '<div class="public-scan-header">' +
-            '<span class="public-scan-domain">' + scan.domain + '</span>' +
-            '<span class="public-scan-owner">by ' + ownerName + '</span>' +
+            '<span class="public-scan-domain">' + escapeHtml(scan.domain) + '</span>' +
+            '<span class="public-scan-owner">by ' + escapeHtml(ownerName) + '</span>' +
             '</div>' +
             '<div class="public-scan-stats">' +
-            '<span class="public-scan-stat">IPs: ' + (scan.ips_count || 0) + '</span>' +
-            '<span class="public-scan-stat">Subs: ' + (scan.subdomains_count || 0) + '</span>' +
-            '<span class="public-scan-stat">CVEs: ' + (scan.cves_count || 0) + '</span>' +
+            '<span class="public-scan-stat">IPs: ' + (parseInt(scan.ips_count) || 0) + '</span>' +
+            '<span class="public-scan-stat">Subs: ' + (parseInt(scan.subdomains_count) || 0) + '</span>' +
+            '<span class="public-scan-stat">CVEs: ' + (parseInt(scan.cves_count) || 0) + '</span>' +
             '</div>' +
-            '<div class="public-scan-date">' + date + '</div>' +
+            '<div class="public-scan-date">' + escapeHtml(date) + '</div>' +
             '</div>';
     }).join('');
 }

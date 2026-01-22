@@ -2,10 +2,14 @@
 TwinSanity Recon V2 - Admin Router
 Admin-only user management endpoints.
 """
+import logging
 import aiosqlite
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from dashboard.middleware.auth import require_admin
+
+logger = logging.getLogger("AdminRouter")
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
 
@@ -30,10 +34,15 @@ async def admin_create_user(data: CreateUserRequest, request: Request):
     """Create a new user (admin only)"""
     await require_admin(request)
     from dashboard.dependencies import validate_password_strength, hash_password
+    import re
     
     # Validate input
     if len(data.username) < 3:
         raise HTTPException(status_code=400, detail="Username must be at least 3 characters")
+    
+    # Sanitize username - only allow alphanumeric, underscore, hyphen
+    if not re.match(r'^[a-zA-Z0-9_-]+$', data.username):
+        raise HTTPException(status_code=400, detail="Username can only contain letters, numbers, underscores, and hyphens")
     
     # Use proper password validation
     is_valid, error = validate_password_strength(data.password)
@@ -129,6 +138,8 @@ async def admin_update_user(user_id: int, data: UpdateUserRequest, request: Requ
     await require_admin(request)
     
     from dashboard.database import get_db
+    from dashboard.dependencies import validate_password_strength, hash_password
+    
     db = await get_db()
     
     # Get existing user
@@ -178,8 +189,22 @@ async def admin_update_user(user_id: int, data: UpdateUserRequest, request: Requ
     if data.role and data.role not in ["user", "admin"]:
         raise HTTPException(status_code=400, detail="Role must be 'user' or 'admin'")
     
+    # Hash password if provided
+    password_hash = None
+    salt = None
+    if data.password:
+        is_valid, error = validate_password_strength(data.password)
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=error)
+        password_hash, salt = hash_password(data.password)
+    
     # Update user (only include non-None values)
-    await db.update_user(user_id, password=data.password, role=data.role)
+    await db.update_user(user_id, password_hash=password_hash, salt=salt, role=data.role)
+    
+    # Invalidate all sessions for this user if password was changed
+    if password_hash:
+        await db.invalidate_user_sessions(user_id)
+        logger.info(f"Password changed for user {user_id}, sessions invalidated")
     
     return {"success": True, "message": "User updated successfully"}
 

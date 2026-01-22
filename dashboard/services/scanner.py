@@ -1,13 +1,15 @@
 """
 TwinSanity Recon V2 - Scanner Service
 Handles the main scan orchestration background task.
+Enhanced with granular progress tracking and real-time statistics broadcasting.
 """
 import sys
 import asyncio
 import json
+import time
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 from dashboard.config import (
     PROJECT_ROOT, logger, RESULTS_DIR, DNS_CONCURRENCY, IP_CONCURRENCY, 
@@ -19,9 +21,42 @@ from dashboard.config import (
 from dashboard.models import ScanConfig
 from dashboard.database import get_db
 from dashboard.state import state
-from dashboard.websocket.manager import manager
+from dashboard.websocket.manager import manager, MessageType
 from dashboard.subdomain_sources import enumerate_subdomains
 from dashboard.services.ai_service import run_ai_analysis_on_results
+
+
+# =====================================================================
+# SCAN PHASE DEFINITIONS
+# =====================================================================
+class ScanPhase:
+    """Defines all scan phases with their progress ranges."""
+    INIT = ("Initialization", 1, 0, 5)
+    SUBDOMAIN_DISCOVERY = ("Subdomain Discovery", 2, 5, 20)
+    BRUTE_FORCE = ("Brute Force Discovery", 3, 20, 30)
+    DNS_RESOLUTION = ("DNS Resolution", 4, 30, 40)
+    INTERNETDB_LOOKUP = ("InternetDB Lookup", 5, 40, 55)
+    CVE_ENRICHMENT = ("CVE Enrichment", 6, 55, 70)
+    EPSS_KEV = ("EPSS/KEV Analysis", 7, 70, 75)
+    HTTP_PROBING = ("HTTP Probing", 8, 75, 82)
+    URL_HARVESTING = ("URL Harvesting", 9, 82, 86)
+    NUCLEI_SCAN = ("Vulnerability Scanning", 10, 86, 90)
+    XSS_SCAN = ("XSS Detection", 11, 90, 93)
+    API_DISCOVERY = ("API Discovery", 12, 93, 96)
+    AI_ANALYSIS = ("AI Analysis", 13, 96, 99)
+    COMPLETE = ("Complete", 14, 100, 100)
+    
+    TOTAL_PHASES = 14
+
+
+def calculate_phase_progress(phase: Tuple, current: int, total: int) -> int:
+    """Calculate overall progress based on phase progress."""
+    _, _, start_pct, end_pct = phase
+    if total == 0:
+        return start_pct
+    phase_progress = (current / total)
+    return int(start_pct + (end_pct - start_pct) * phase_progress)
+
 
 # Helper to count IPs excluding metadata
 def count_actual_ips(results: Dict) -> int:
@@ -34,6 +69,7 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
     - Multi-source subdomain enumeration (async)
     - SQLite database for persistence
     - InternetDB for port/CVE data
+    - Real-time progress tracking with granular phase updates
     """
     # Ensure project root is in path for TwinSanity_Recon imports
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -44,13 +80,98 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
     # Create scan in database
     await db.create_scan(scan_id, config.domain, config.model_dump(), user_id)
     
-    state.update_scan(scan_id, status="running", progress=5)
-    await manager.broadcast(scan_id, {
-        "type": "status", "status": "running", "progress": 5,
-        "message": "Initializing scan..."
-    })
+    # Phase timing tracker
+    phase_timings: Dict[str, float] = {}
+    
+    # Helper to check if scan was cancelled
+    def is_cancelled() -> bool:
+        return state.is_cancelled(scan_id)
+    
+    # Helper for phase broadcasts with timing
+    async def start_phase(phase: Tuple, description: str = ""):
+        """Start a new scan phase with broadcast."""
+        phase_name, phase_num, start_pct, _ = phase
+        phase_timings[phase_name] = time.time()
+        
+        state.update_scan(scan_id, status="running", progress=start_pct, current_phase=phase_name)
+        await db.update_scan(scan_id, progress=start_pct)
+        
+        await manager.broadcast_phase_start(
+            scan_id, 
+            phase_name, 
+            phase_num, 
+            ScanPhase.TOTAL_PHASES,
+            description or f"Starting {phase_name}..."
+        )
+        await manager.broadcast(scan_id, {
+            "type": "status", 
+            "status": "running", 
+            "progress": start_pct,
+            "message": description or f"Starting {phase_name}...",
+            "phase": phase_name,
+            "phase_num": phase_num,
+            "total_phases": ScanPhase.TOTAL_PHASES
+        })
+    
+    async def update_phase_progress(phase: Tuple, current: int, total: int, item: str = ""):
+        """Update progress within a phase with throttling."""
+        phase_name, _, _, _ = phase
+        progress = calculate_phase_progress(phase, current, total)
+        
+        state.update_scan(scan_id, progress=progress)
+        
+        # Throttle WebSocket updates - only send every 5th update or on significant milestones
+        # This prevents browser lag from too many updates
+        should_broadcast = (
+            current <= 5 or  # First 5 updates
+            current == total or  # Last update
+            current % max(1, total // 20) == 0 or  # Every ~5% progress
+            current % 10 == 0  # Every 10 items
+        )
+        
+        if should_broadcast:
+            await manager.broadcast_phase_progress(scan_id, phase_name, current, total, item)
+            
+            # Also send legacy status message for backwards compatibility
+            await manager.broadcast(scan_id, {
+                "type": "progress",
+                "progress": progress,
+                "message": f"{phase_name}: {current}/{total}" + (f" - {item}" if item else ""),
+                "current": current,
+                "total": total
+            })
+    
+    async def complete_phase(phase: Tuple, results_count: int):
+        """Complete a phase with timing info."""
+        phase_name, _, _, end_pct = phase
+        duration_ms = int((time.time() - phase_timings.get(phase_name, time.time())) * 1000)
+        
+        state.update_scan(scan_id, progress=end_pct)
+        await db.update_scan(scan_id, progress=end_pct)
+        await manager.broadcast_phase_complete(scan_id, phase_name, results_count, duration_ms)
+    
+    # Initialize statistics tracking
+    manager.update_stats(scan_id, 
+        total_subdomains=0, 
+        live_subdomains=0,
+        total_ips=0, 
+        total_cves=0,
+        critical_cves=0,
+        high_cves=0,
+        medium_cves=0,
+        low_cves=0
+    )
+    
+    # =====================================================================
+    # Phase 1: INITIALIZATION
+    # =====================================================================
+    await start_phase(ScanPhase.INIT, "Initializing scan environment...")
     
     try:
+        # Check for cancellation early
+        if is_cancelled():
+            raise asyncio.CancelledError("Scan was cancelled by user")
+        
         # Import legacy functions we still need
         from TwinSanity_Recon import (
             create_session, fetch_internetdb, fetch_cve_details,
@@ -77,14 +198,17 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
         # Get event loop for executor calls
         loop = asyncio.get_event_loop()
         
+        await complete_phase(ScanPhase.INIT, 1)
+        
+        # Check cancellation between phases
+        if is_cancelled():
+            raise asyncio.CancelledError("Scan was cancelled by user")
+        loop = asyncio.get_event_loop()
+        
         # =====================================================================
-        # Phase 1: Multi-Source Subdomain Discovery (ASYNC)
+        # Phase 2: Multi-Source Subdomain Discovery (ASYNC)
         # =====================================================================
-        await manager.broadcast(scan_id, {
-            "type": "status", "status": "running", "progress": 10,
-            "message": f"Discovering subdomains for {domain} from multiple sources..."
-        })
-        await db.update_scan(scan_id, progress=10)
+        await start_phase(ScanPhase.SUBDOMAIN_DISCOVERY, f"Discovering subdomains for {domain}...")
         
         # Build sources config from scan config (user-selected sources)
         user_sources = getattr(config, 'subdomain_sources', None) or {}
@@ -108,12 +232,31 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
         
         # Run async subdomain enumeration
         if config.subdomain_discovery:
+            active_sources = [k for k, v in sources.items() if v]
+            await manager.broadcast(scan_id, {
+                "type": "log",
+                "message": f"🔍 Querying {len(active_sources)} sources: {', '.join(active_sources)}"
+            })
+            
             subdomains = await enumerate_subdomains(
                 domain,
                 sources=sources,
                 validate_dns=validate_dns,
                 timeout=SCAN_TIMEOUT
             )
+            
+            # Update statistics
+            manager.update_stats(scan_id, total_subdomains=len(subdomains))
+            await manager.broadcast_stats(scan_id)
+            
+            # Broadcast each subdomain found (for real-time UI update)
+            for i, subdomain in enumerate(list(subdomains)[:50]):  # First 50 for UI
+                await manager.broadcast_typed(scan_id, MessageType.SUBDOMAIN_FOUND, {
+                    "subdomain": subdomain,
+                    "index": i + 1,
+                    "total": len(subdomains)
+                })
+            
             # In delta-only mode, skip subdomains observed previously.
             baseline = {s.lower() for s in (config.baseline_subdomains or [])}
             if config.delta_only and baseline:
@@ -123,28 +266,33 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                     "type": "log",
                     "message": f"Δ Delta scan: filtered {before - len(subdomains)} previously seen subdomains"
                 })
+            
             await manager.broadcast(scan_id, {
                 "type": "log",
                 "message": f"✅ Found {len(subdomains)} subdomains from multiple sources"
             })
         else:
             subdomains = {domain}
+            manager.update_stats(scan_id, total_subdomains=1)
             await manager.broadcast(scan_id, {
                 "type": "log",
                 "message": "Subdomain discovery disabled, using target domain only"
             })
         
+        await complete_phase(ScanPhase.SUBDOMAIN_DISCOVERY, len(subdomains))
+        
+        # Check cancellation
+        if is_cancelled():
+            raise asyncio.CancelledError("Scan was cancelled by user")
+        
         # =====================================================================
-        # Phase 1.5: Brute Force Subdomain Discovery (if enabled)
+        # Phase 3: Brute Force Subdomain Discovery (if enabled)
         # =====================================================================
         if config.brute_force and config.wordlist:
+            await start_phase(ScanPhase.BRUTE_FORCE, f"Brute forcing subdomains with wordlist: {config.wordlist}...")
+            
             from TwinSanity_Recon import brute_force_subdomains
             from dashboard.wordlist_manager import wordlist_manager, WORDLIST_DIR
-            
-            await manager.broadcast(scan_id, {
-                "type": "status", "status": "running", "progress": 20,
-                "message": f"Brute forcing subdomains with wordlist: {config.wordlist}..."
-            })
             
             # Get wordlist path or generate temporary file for builtin wordlists
             wordlist_id = config.wordlist
@@ -154,10 +302,17 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                 # Generate temporary file from builtin wordlist
                 import tempfile
                 temp_wl = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
-                for entry in wordlist_manager.get_wordlist_entries(wordlist_id):
+                entries = list(wordlist_manager.get_wordlist_entries(wordlist_id))
+                total_entries = len(entries)
+                for entry in entries:
                     temp_wl.write(entry + '\n')
                 temp_wl.close()
                 wl_path = Path(temp_wl.name)
+                
+                await manager.broadcast(scan_id, {
+                    "type": "log",
+                    "message": f"📝 Loaded {total_entries} entries from {wordlist_id} wordlist"
+                })
             
             if wl_path.exists():
                 # Run brute force in executor (it's synchronous)
@@ -170,6 +325,10 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                 new_from_bf = bf_subdomains - subdomains
                 subdomains.update(bf_subdomains)
                 
+                # Update statistics
+                manager.update_stats(scan_id, total_subdomains=len(subdomains))
+                await manager.broadcast_stats(scan_id)
+                
                 await manager.broadcast(scan_id, {
                     "type": "log",
                     "message": f"✅ Brute force found {len(new_from_bf)} additional subdomains ({len(bf_subdomains)} total resolved)"
@@ -179,22 +338,26 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                 if not wordlist_id.startswith("custom:"):
                     try:
                         wl_path.unlink()
-                    except:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Failed to cleanup temp wordlist file: {e}")
+                
+                await complete_phase(ScanPhase.BRUTE_FORCE, len(new_from_bf))
             else:
                 await manager.broadcast(scan_id, {
                     "type": "log",
                     "message": f"⚠️ Wordlist not found: {wl_path}"
                 })
+                await complete_phase(ScanPhase.BRUTE_FORCE, 0)
+            
+            # Check cancellation
+            if is_cancelled():
+                raise asyncio.CancelledError("Scan was cancelled by user")
         
         # =====================================================================
-        # Phase 2: DNS Resolution (already done in enumerate if validate_dns=True)
+        # Phase 4: DNS Resolution
         # =====================================================================
-        await manager.broadcast(scan_id, {
-            "type": "status", "status": "running", "progress": 30,
-            "message": f"Resolving {len(subdomains)} hosts..."
-        })
-        await db.update_scan(scan_id, progress=30, subdomains_count=len(subdomains))
+        await start_phase(ScanPhase.DNS_RESOLUTION, f"Resolving {len(subdomains)} hosts...")
+        await db.update_scan(scan_id, subdomains_count=len(subdomains))
         
         # Use run_in_executor for sync DNS resolution
         resolved = await loop.run_in_executor(
@@ -210,21 +373,41 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                 if host not in ip_map[ip]:
                     ip_map[ip].append(host)
         
+        # Update statistics
+        manager.update_stats(scan_id, 
+            total_ips=len(ip_map),
+            live_subdomains=len(resolved)
+        )
+        await manager.broadcast_stats(scan_id)
+        
+        # Broadcast IP resolution results
+        for i, (ip, hosts) in enumerate(ip_map.items()):
+            await manager.broadcast_typed(scan_id, MessageType.IP_RESOLVED, {
+                "ip": ip,
+                "hosts": hosts,
+                "index": i + 1,
+                "total": len(ip_map)
+            })
+            await update_phase_progress(ScanPhase.DNS_RESOLUTION, i + 1, len(ip_map), ip)
+        
         await manager.broadcast(scan_id, {
             "type": "log",
-            "message": f"✅ Resolved to {len(ip_map)} unique IPs"
+            "message": f"✅ Resolved to {len(ip_map)} unique IPs from {len(resolved)} live hosts"
         })
         
+        await complete_phase(ScanPhase.DNS_RESOLUTION, len(ip_map))
+        
+        # Check cancellation
+        if is_cancelled():
+            raise asyncio.CancelledError("Scan was cancelled by user")
+        
         # =====================================================================
-        # Phase 3: Shodan/InternetDB Lookup (PARALLEL with progress)
+        # Phase 5: Shodan/InternetDB Lookup (PARALLEL with progress)
         # =====================================================================
         results = {}
         if config.shodan_lookup and ip_map:
-            await manager.broadcast(scan_id, {
-                "type": "status", "status": "running", "progress": 50,
-                "message": f"Querying InternetDB for {len(ip_map)} IPs (parallel)..."
-            })
-            await db.update_scan(scan_id, progress=50, ips_count=len(ip_map))
+            await start_phase(ScanPhase.INTERNETDB_LOOKUP, f"Querying InternetDB for {len(ip_map)} IPs...")
+            await db.update_scan(scan_id, ips_count=len(ip_map))
             
             total_ips = len(ip_map)
             ip_list = list(ip_map.items())
@@ -236,6 +419,10 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
             async def fetch_ip_data(ip: str, hosts: list, max_retries: int = 3) -> tuple:
                 """Fetch InternetDB data for a single IP with semaphore and retry logic"""
                 async with sem:
+                    # Check cancellation before each IP
+                    if is_cancelled():
+                        return ip, hosts, {"ok": False, "error": "cancelled"}
+                    
                     result = None
                     for attempt in range(max_retries):
                         try:
@@ -255,13 +442,22 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                                 await asyncio.sleep(1.0 * (attempt + 1))
                     
                     completed_count[0] += 1
-                    # Broadcast progress every 5 completions
-                    if completed_count[0] % 5 == 0 or completed_count[0] == total_ips:
-                        progress = 50 + int((completed_count[0] / total_ips) * 25)
-                        await manager.broadcast(scan_id, {
-                            "type": "status", "status": "running", "progress": progress,
-                            "message": f"Queried {completed_count[0]}/{total_ips} IPs..."
+                    
+                    # Update progress and broadcast
+                    await update_phase_progress(ScanPhase.INTERNETDB_LOOKUP, completed_count[0], total_ips, ip)
+                    
+                    # Broadcast host scanned event for real-time UI
+                    if result and result.get("ok"):
+                        ports = result.get("data", {}).get("ports", [])
+                        vulns = result.get("data", {}).get("vulns", [])
+                        await manager.broadcast_typed(scan_id, MessageType.HOST_SCANNED, {
+                            "ip": ip,
+                            "hosts": hosts,
+                            "ports_count": len(ports),
+                            "vulns_count": len(vulns),
+                            "ports": ports[:10]  # First 10 ports
                         })
+                    
                     return ip, hosts, result
             
             # Run all InternetDB queries in parallel
@@ -269,6 +465,7 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
             fetched_results = await asyncio.gather(*tasks, return_exceptions=True)
             
             # Process results
+            successful_lookups = 0
             for item in fetched_results:
                 if isinstance(item, Exception):
                     logger.warning(f"InternetDB fetch error: {item}")
@@ -280,21 +477,30 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                     "internetdb": result,
                     "cve_details": []
                 }
+                if result and result.get("ok"):
+                    successful_lookups += 1
+            
+            await manager.broadcast(scan_id, {
+                "type": "log",
+                "message": f"✅ InternetDB lookup complete: {successful_lookups}/{total_ips} IPs returned data"
+            })
+            
+            await complete_phase(ScanPhase.INTERNETDB_LOOKUP, successful_lookups)
         else:
             # Just build basic results without InternetDB
             for ip, hosts in ip_map.items():
                 results[ip] = {"ip": ip, "hosts": hosts, "internetdb": {}, "cve_details": []}
         
+        # Check cancellation
+        if is_cancelled():
+            raise asyncio.CancelledError("Scan was cancelled by user")
+        
         # =====================================================================
-        # Phase 4: CVE Enrichment (with caching)
+        # Phase 6: CVE Enrichment (with caching)
         # =====================================================================
         total_cves = 0
         if config.cve_enrichment and results:
-            await manager.broadcast(scan_id, {
-                "type": "status", "status": "running", "progress": 80,
-                "message": "Enriching CVE details..."
-            })
-            await db.update_scan(scan_id, progress=80)
+            await start_phase(ScanPhase.CVE_ENRICHMENT, "Enriching CVE details...")
             
             cache_path = RESULTS_DIR / "cve_cache.json"
             cve_cache = load_cve_cache(cache_path) if cache_path.exists() else {}
@@ -384,7 +590,12 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                             source=detail.get("source")
                         )
             
-            # Map CVE details back to IPs
+            # Map CVE details back to IPs and track severity counts
+            critical_count = 0
+            high_count = 0
+            medium_count = 0
+            low_count = 0
+            
             for cve, ips in cve_to_ips.items():
                 detail = cve_details_map.get(cve, {})
                 if detail.get("summary"):
@@ -397,12 +608,25 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                             cvss_val = float(detail.get("cvss") or detail.get("cvss3") or 0)
                             if cvss_val >= 9.0:
                                 severity = "critical"
+                                critical_count += 1
                             elif cvss_val >= 7.0:
                                 severity = "high"
+                                high_count += 1
                             elif cvss_val >= 4.0:
                                 severity = "medium"
+                                medium_count += 1
                             else:
                                 severity = "low"
+                                low_count += 1
+                            
+                            # Broadcast CVE found event
+                            await manager.broadcast_typed(scan_id, MessageType.CVE_FOUND, {
+                                "cve_id": cve,
+                                "cvss": cvss_val,
+                                "severity": severity,
+                                "ip": ip,
+                                "summary": detail.get("summary", "")[:100]
+                            })
                                 
                             findings_to_save.append({
                                 "scan_id": scan_id,
@@ -416,21 +640,34 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                                 "ports": ip_cve_ports.get(ip, []),
                             })
             
+            # Update statistics
+            manager.update_stats(scan_id,
+                total_cves=total_cves,
+                critical_cves=critical_count,
+                high_cves=high_count,
+                medium_cves=medium_count,
+                low_cves=low_count
+            )
+            await manager.broadcast_stats(scan_id)
+            
             # Save findings to database
             if findings_to_save:
                 await db.save_findings_batch(findings_to_save)
             
             # Save legacy cache
             save_cve_cache(cache_path, cve_cache)
+            
+            await complete_phase(ScanPhase.CVE_ENRICHMENT, total_cves)
+            
+            # Check cancellation
+            if is_cancelled():
+                raise asyncio.CancelledError("Scan was cancelled by user")
         
         # =====================================================================
-        # Phase 4.5: CVE Enrichment (EPSS + KEV)
+        # Phase 7: CVE Enrichment (EPSS + KEV)
         # =====================================================================
         if config.cve_enrichment and total_cves > 0:
-            await manager.broadcast(scan_id, {
-                "type": "status", "status": "running", "progress": 75,
-                "message": "Enriching CVEs with EPSS scores and KEV status..."
-            })
+            await start_phase(ScanPhase.EPSS_KEV, "Enriching CVEs with EPSS scores and KEV status...")
             
             try:
                 from dashboard.services.cve_enrichment import enrich_cves, calculate_risk_score
@@ -479,6 +716,8 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                         "message": f"✅ CVE enrichment complete: {kev_count} KEV, {high_epss_count} high-EPSS"
                     })
                     logger.info(f"Scan {scan_id}: CVE enrichment - {kev_count} KEV, {high_epss_count} high-EPSS")
+                    
+                    await complete_phase(ScanPhase.EPSS_KEV, len(enriched))
             except Exception as enrich_err:
                 logger.warning(f"CVE enrichment failed: {enrich_err}")
                 await manager.broadcast(scan_id, {
@@ -486,33 +725,23 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                     "message": f"⚠️ CVE enrichment skipped: {str(enrich_err)[:100]}"
                 })
         
+        # Check cancellation
+        if is_cancelled():
+            raise asyncio.CancelledError("Scan was cancelled by user")
+        
         # =====================================================================
-        # Complete
+        # INTERMEDIATE: Save results before tool phases
         # =====================================================================
         # Count actual IPs (exclude metadata keys)
         actual_ip_count = count_actual_ips(results)
         
-        state.update_scan(scan_id, status="completed", progress=100, results=results)
+        # Update database with current progress
         await db.update_scan(
             scan_id,
-            status="completed",
-            progress=100,
             subdomains_count=len(subdomains),
             ips_count=actual_ip_count,
             cves_count=total_cves
         )
-        
-        await manager.broadcast(scan_id, {
-            "type": "complete",
-            "status": "completed",
-            "progress": 100,
-            "message": f"Scan complete! Found {actual_ip_count} IPs with {total_cves} CVEs",
-            "summary": {
-                "total_ips": actual_ip_count,
-                "total_subdomains": len(subdomains),
-                "total_cves": total_cves
-            }
-        })
         
         # Save results file with metadata including all discovered subdomains
         RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -535,14 +764,11 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
         await db.update_scan(scan_id, result_file=str(results_file))
         
         # =====================================================================
-        # Phase 5.5: HTTP Probing (if enabled) - MUST RUN BEFORE AI ANALYSIS
+        # Phase 8: HTTP Probing (if enabled) - MUST RUN BEFORE AI ANALYSIS
         # =====================================================================
         http_probing_enabled = getattr(config, 'http_probing', False)
         if http_probing_enabled and subdomains:
-            await manager.broadcast(scan_id, {
-                "type": "status", "status": "running", "progress": 85,
-                "message": f"HTTP probing {len(subdomains)} subdomains..."
-            })
+            await start_phase(ScanPhase.HTTP_PROBING, f"HTTP probing {len(subdomains)} subdomains...")
             
             try:
                 from dashboard.services.httpx_prober import probe_hosts, save_probe_results
@@ -555,11 +781,27 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                 
                 if probe_results:
                     await save_probe_results(scan_id, probe_results)
+                    
+                    # Update statistics
+                    manager.update_stats(scan_id, http_live=len(probe_results))
+                    await manager.broadcast_stats(scan_id)
+                    
+                    # Broadcast each HTTP result
+                    for i, result in enumerate(probe_results[:20]):  # First 20 for UI
+                        await manager.broadcast_typed(scan_id, MessageType.HTTPX_RESULT, {
+                            "url": result.get("url"),
+                            "status_code": result.get("status_code"),
+                            "title": result.get("title", ""),
+                            "tech": result.get("tech", [])
+                        })
+                    
                     await manager.broadcast(scan_id, {
                         "type": "log",
                         "message": f"✅ HTTP probing complete: {len(probe_results)} alive hosts found"
                     })
                     logger.info(f"Scan {scan_id}: HTTP probing found {len(probe_results)} alive hosts")
+                    
+                    await complete_phase(ScanPhase.HTTP_PROBING, len(probe_results))
             except Exception as probe_err:
                 logger.error(f"Scan {scan_id}: HTTP probing failed: {probe_err}")
                 await manager.broadcast(scan_id, {
@@ -567,15 +809,16 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                     "message": f"⚠️ HTTP probing failed: {str(probe_err)[:100]}"
                 })
         
+        # Check cancellation
+        if is_cancelled():
+            raise asyncio.CancelledError("Scan was cancelled by user")
+        
         # =====================================================================
-        # Phase 5.6: URL Harvesting (if enabled)
+        # Phase 9: URL Harvesting (if enabled)
         # =====================================================================
         url_harvesting_enabled = getattr(config, 'url_harvesting', False)
         if url_harvesting_enabled:
-            await manager.broadcast(scan_id, {
-                "type": "status", "status": "running", "progress": 87,
-                "message": f"Harvesting historical URLs for {domain}..."
-            })
+            await start_phase(ScanPhase.URL_HARVESTING, f"Harvesting historical URLs for {domain}...")
             
             try:
                 from dashboard.services.url_harvester import harvest_urls, save_harvested_urls
@@ -589,11 +832,18 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                 total_urls = sum(len(v) for v in harvest_results.values())
                 if total_urls > 0:
                     await save_harvested_urls(scan_id, harvest_results)
+                    
+                    # Update statistics
+                    manager.update_stats(scan_id, urls_found=total_urls)
+                    await manager.broadcast_stats(scan_id)
+                    
                     await manager.broadcast(scan_id, {
                         "type": "log",
                         "message": f"✅ URL harvesting complete: {total_urls} URLs found"
                     })
                     logger.info(f"Scan {scan_id}: URL harvesting found {total_urls} URLs")
+                    
+                    await complete_phase(ScanPhase.URL_HARVESTING, total_urls)
             except Exception as harvest_err:
                 logger.error(f"Scan {scan_id}: URL harvesting failed: {harvest_err}")
                 await manager.broadcast(scan_id, {
@@ -601,15 +851,16 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                     "message": f"⚠️ URL harvesting failed: {str(harvest_err)[:100]}"
                 })
         
+        # Check cancellation
+        if is_cancelled():
+            raise asyncio.CancelledError("Scan was cancelled by user")
+        
         # =====================================================================
-        # Phase 5.7: Nuclei Vulnerability Scanning (if enabled)
+        # Phase 10: Nuclei Vulnerability Scanning (if enabled)
         # =====================================================================
         nuclei_scan_enabled = getattr(config, 'nuclei_scan', False)
         if nuclei_scan_enabled:
-            await manager.broadcast(scan_id, {
-                "type": "status", "status": "running", "progress": 89,
-                "message": "Running vulnerability scanning..."
-            })
+            await start_phase(ScanPhase.NUCLEI_SCAN, "Running vulnerability scanning...")
             
             try:
                 from dashboard.services.nuclei_scanner import (
@@ -645,11 +896,30 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                         await save_nuclei_findings(scan_id, findings)
                         critical_count = len([f for f in findings if f.get("severity") == "critical"])
                         high_count = len([f for f in findings if f.get("severity") == "high"])
+                        
+                        # Update statistics
+                        manager.update_stats(scan_id, 
+                            nuclei_findings=len(findings),
+                            total_vulnerabilities=len(findings)
+                        )
+                        await manager.broadcast_stats(scan_id)
+                        
+                        # Broadcast nuclei findings
+                        for finding in findings[:10]:  # First 10 for UI
+                            await manager.broadcast_typed(scan_id, MessageType.NUCLEI_RESULT, {
+                                "template_id": finding.get("template_id"),
+                                "severity": finding.get("severity"),
+                                "host": finding.get("host"),
+                                "matched": finding.get("matched_at", "")
+                            })
+                        
                         await manager.broadcast(scan_id, {
                             "type": "log",
                             "message": f"✅ Vuln scan complete: {len(findings)} findings ({critical_count} critical, {high_count} high)"
                         })
                         logger.info(f"Scan {scan_id}: Nuclei found {len(findings)} vulnerabilities")
+                        
+                        await complete_phase(ScanPhase.NUCLEI_SCAN, len(findings))
             except Exception as nuclei_err:
                 logger.error(f"Scan {scan_id}: Nuclei scan failed: {nuclei_err}")
                 await manager.broadcast(scan_id, {
@@ -657,15 +927,16 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                     "message": f"⚠️ Vulnerability scanning failed: {str(nuclei_err)[:100]}"
                 })
         
+        # Check cancellation
+        if is_cancelled():
+            raise asyncio.CancelledError("Scan was cancelled by user")
+        
         # =====================================================================
-        # Phase 5.8: XSS Scanning (if enabled)
+        # Phase 11: XSS Scanning (if enabled)
         # =====================================================================
         xss_scan_enabled = getattr(config, 'xss_scan', False)
         if xss_scan_enabled:
-            await manager.broadcast(scan_id, {
-                "type": "status", "status": "running", "progress": 91,
-                "message": "Testing for XSS vulnerabilities..."
-            })
+            await start_phase(ScanPhase.XSS_SCAN, "Testing for XSS vulnerabilities...")
             
             try:
                 from dashboard.services.xss_scanner import scan_urls_for_xss, save_xss_findings
@@ -683,11 +954,26 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                     )
                     if xss_results:
                         await save_xss_findings(scan_id, xss_results)
+                        
+                        # Update statistics
+                        manager.update_stats(scan_id, xss_findings=len(xss_results))
+                        await manager.broadcast_stats(scan_id)
+                        
+                        # Broadcast XSS findings
+                        for xss in xss_results[:5]:  # First 5 for UI
+                            await manager.broadcast_typed(scan_id, MessageType.XSS_RESULT, {
+                                "url": xss.get("url"),
+                                "parameter": xss.get("parameter"),
+                                "payload": xss.get("payload", "")[:50]
+                            })
+                        
                         await manager.broadcast(scan_id, {
                             "type": "log",
                             "message": f"✅ XSS scan complete: {len(xss_results)} potential XSS found"
                         })
                         logger.info(f"Scan {scan_id}: XSS scan found {len(xss_results)} vulnerabilities")
+                        
+                        await complete_phase(ScanPhase.XSS_SCAN, len(xss_results))
                 else:
                     await manager.broadcast(scan_id, {
                         "type": "log",
@@ -700,15 +986,16 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                     "message": f"⚠️ XSS scanning failed: {str(xss_err)[:100]}"
                 })
         
+        # Check cancellation
+        if is_cancelled():
+            raise asyncio.CancelledError("Scan was cancelled by user")
+        
         # =====================================================================
-        # Phase 5.9: API Discovery (if enabled)
+        # Phase 12: API Discovery (if enabled)
         # =====================================================================
         api_discovery_enabled = getattr(config, 'api_discovery', False)
         if api_discovery_enabled:
-            await manager.broadcast(scan_id, {
-                "type": "status", "status": "running", "progress": 93,
-                "message": "Discovering API endpoints..."
-            })
+            await start_phase(ScanPhase.API_DISCOVERY, "Discovering API endpoints...")
             
             try:
                 from dashboard.services.api_discovery import discover_apis, save_api_discoveries
@@ -728,11 +1015,26 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                     api_results = await discover_apis(base_urls[:max_hosts])
                     if api_results:
                         await save_api_discoveries(scan_id, api_results)
+                        
+                        # Update statistics
+                        manager.update_stats(scan_id, api_endpoints=len(api_results))
+                        await manager.broadcast_stats(scan_id)
+                        
+                        # Broadcast API endpoints
+                        for api in api_results[:10]:  # First 10 for UI
+                            await manager.broadcast_typed(scan_id, MessageType.API_ENDPOINT, {
+                                "url": api.get("url"),
+                                "method": api.get("method", "GET"),
+                                "status": api.get("status_code")
+                            })
+                        
                         await manager.broadcast(scan_id, {
                             "type": "log",
                             "message": f"✅ API discovery complete: {len(api_results)} endpoints found"
                         })
                         logger.info(f"Scan {scan_id}: API discovery found {len(api_results)} endpoints")
+                        
+                        await complete_phase(ScanPhase.API_DISCOVERY, len(api_results))
             except Exception as api_err:
                 logger.error(f"Scan {scan_id}: API discovery failed: {api_err}")
                 await manager.broadcast(scan_id, {
@@ -740,16 +1042,17 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                     "message": f"⚠️ API discovery failed: {str(api_err)[:100]}"
                 })
         
+        # Check cancellation
+        if is_cancelled():
+            raise asyncio.CancelledError("Scan was cancelled by user")
+        
         # =====================================================================
-        # Phase 6: V1-Style AI Analysis (RUNS LAST - after all tools complete)
+        # Phase 13: V1-Style AI Analysis (RUNS LAST - after all tools complete)
         # This ensures AI analysis includes all tool findings
         # =====================================================================
         ai_analysis_enabled = getattr(config, 'ai_analysis', False)
         if ai_analysis_enabled and results:
-            await manager.broadcast(scan_id, {
-                "type": "status", "status": "running", "progress": 95,
-                "message": "Running AI analysis (Gemini→Cloud→Local pipeline)..."
-            })
+            await start_phase(ScanPhase.AI_ANALYSIS, "Running AI analysis (Gemini→Cloud→Local pipeline)...")
             
             try:
                 # Load all tool findings for comprehensive AI analysis
@@ -778,11 +1081,21 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                     
                     tools_msg = f" + {', '.join(tool_summary)}" if tool_summary else ""
                     
+                    # Broadcast AI analysis complete
+                    await manager.broadcast_typed(scan_id, MessageType.AI_SUMMARY, {
+                        "cves_analyzed": len(ai_report.get('all_cves', [])),
+                        "chunks_processed": ai_report.get('chunks_processed', 0),
+                        "tools_analyzed": tool_summary,
+                        "provider": ai_report.get('provider', 'unknown')
+                    })
+                    
                     await manager.broadcast(scan_id, {
                         "type": "log",
                         "message": f"✅ AI analysis complete: {len(ai_report.get('all_cves', []))} CVEs analyzed{tools_msg}"
                     })
                     logger.info(f"Scan {scan_id}: AI analysis saved with {len(ai_report.get('all_cves', []))} CVEs and tools findings")
+                    
+                    await complete_phase(ScanPhase.AI_ANALYSIS, len(ai_report.get('all_cves', [])))
                 else:
                     await manager.broadcast(scan_id, {
                         "type": "log",
@@ -796,19 +1109,71 @@ async def run_scan(scan_id: str, config: ScanConfig, user_id: int):
                 })
         
         # =====================================================================
-        # FINAL: Broadcast completion
+        # FINAL: Mark scan as complete
         # =====================================================================
+        await start_phase(ScanPhase.COMPLETE, "Finalizing scan results...")
+        
+        # Final statistics update
+        final_stats = manager.get_stats(scan_id)
+        if final_stats:
+            final_stats.last_updated = datetime.now().isoformat()
+            await manager.broadcast_stats(scan_id)
+        
+        # Update final state
+        state.update_scan(scan_id, status="completed", progress=100, results=results)
+        await db.update_scan(
+            scan_id,
+            status="completed",
+            progress=100,
+            subdomains_count=len(subdomains),
+            ips_count=count_actual_ips(results),
+            cves_count=total_cves
+        )
+        
+        # Calculate total scan duration
+        scan_duration = int((time.time() - phase_timings.get("Initialization", time.time())) * 1000)
+        
+        # Broadcast completion with comprehensive summary
         await manager.broadcast(scan_id, {
             "type": "complete",
             "status": "completed",
-            "message": f"Scan complete: {len(subdomains)} subdomains, {count_actual_ips(results)} IPs, {total_cves} CVEs"
+            "progress": 100,
+            "message": f"Scan complete: {len(subdomains)} subdomains, {count_actual_ips(results)} IPs, {total_cves} CVEs",
+            "summary": {
+                "total_subdomains": len(subdomains),
+                "total_ips": count_actual_ips(results),
+                "total_cves": total_cves,
+                "duration_ms": scan_duration,
+                "stats": final_stats.to_dict() if final_stats else {}
+            }
         })
         
-        logger.info(f"Scan {scan_id} completed: {len(subdomains)} subdomains, {len(results)} IPs, {total_cves} CVEs")
+        # Cleanup WebSocket manager data for this scan
+        manager.cleanup_scan(scan_id)
+        
+        logger.info(f"Scan {scan_id} completed in {scan_duration/1000:.1f}s: {len(subdomains)} subdomains, {len(results)} IPs, {total_cves} CVEs")
+        
+    except asyncio.CancelledError:
+        # Scan was cancelled by user
+        logger.info(f"Scan {scan_id} was cancelled by user")
+        state.update_scan(scan_id, status="cancelled")
+        state.clear_cancelled(scan_id)
+        await db.update_scan(scan_id, status="cancelled")
+        
+        # Broadcast cancellation
+        await manager.broadcast_typed(scan_id, MessageType.CANCELLED, {
+            "message": "Scan was cancelled by user"
+        })
+        await manager.broadcast(scan_id, {
+            "type": "status", 
+            "status": "cancelled", 
+            "message": "Scan was cancelled by user"
+        })
         
     except Exception as e:
         logger.error(f"Scan {scan_id} failed: {e}", exc_info=True)
         state.update_scan(scan_id, status="failed", error=str(e))
+        state.clear_cancelled(scan_id)  # Clear cancellation flag if any
         await db.update_scan(scan_id, status="failed", error=str(e))
         await manager.broadcast(scan_id, {"type": "error", "status": "failed", "message": str(e)})
 

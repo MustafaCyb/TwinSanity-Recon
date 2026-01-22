@@ -2,7 +2,7 @@
 TwinSanity Recon V2 - AI Analysis Router
 AI analysis endpoints for scan results.
 """
-
+import re
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -10,6 +10,15 @@ from dashboard.config import logger, RESULTS_DIR
 from dashboard.scan_context import load_scan_results_for_llm
 
 router = APIRouter(prefix="/api", tags=["AI Analysis"])
+
+
+def strip_thinking_tags(content: str) -> str:
+    """Strip <think>...</think> tags from LLM response content."""
+    if not content:
+        return ""
+    cleaned = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL | re.IGNORECASE)
+    cleaned = re.sub(r"<\|think\|>.*?<\|end_think\|>", "", cleaned, flags=re.DOTALL | re.IGNORECASE)
+    return cleaned.strip()
 
 
 class AIAnalysisRequest(BaseModel):
@@ -464,18 +473,21 @@ Provide a comprehensive answer based on the scan data above:"""
             temperature=0.2  # Lower temperature for more factual answers
         )
         
+        # Strip any thinking tags from response (safety net)
+        clean_response = strip_thinking_tags(response.content)
+        
         # Add response to memory
-        memory.add_message("assistant", response.content)
+        memory.add_message("assistant", clean_response)
         
         # Save both messages to database for persistence
         try:
             await db.save_message(scan_id, "user", message, provider)
-            await db.save_message(scan_id, "assistant", response.content, response.provider)
+            await db.save_message(scan_id, "assistant", clean_response, response.provider)
         except Exception as e:
             logger.warning(f"Failed to save chat to DB: {e}")
         
         return {
-            "response": response.content,
+            "response": clean_response,
             "provider": response.provider,
             "model": response.model,
             "memory_stats": memory.get_stats(),

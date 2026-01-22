@@ -114,12 +114,13 @@ async def login(request: Request, response: Response, data: LoginRequest):
         if remaining_attempts <= 0:
             raise HTTPException(
                 status_code=429,
-                detail=f"Account locked. Too many failed attempts. Try again in {LOCKOUT_MINUTES} minutes."
+                detail="Account temporarily locked due to multiple failed login attempts. Please try again later."
             )
         
+        # Don't reveal remaining attempts count for security
         raise HTTPException(
             status_code=401, 
-            detail=f"Invalid username or password. {remaining_attempts} attempts remaining."
+            detail="Invalid username or password"
         )
     
     # Clear failed login attempts on successful login
@@ -154,8 +155,9 @@ async def login(request: Request, response: Response, data: LoginRequest):
         value=session_id,
         httponly=True,
         secure=is_production,  # Only require HTTPS in production
-        samesite="strict" if is_production else "lax",  # Lax allows same-site navigation in dev
-        max_age=max_age
+        samesite="strict",  # Always strict to prevent CSRF attacks
+        max_age=max_age,
+        path="/"  # Ensure cookie is valid for all paths
     )
     
     logger.info(f"User '{data.username}' logged in from {client_ip}")

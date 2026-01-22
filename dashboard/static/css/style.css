@@ -1259,6 +1259,158 @@ figure.progress-bar {
     animation: glow 2s ease-in-out infinite;
 }
 
+/* ===== ENHANCED PHASE INDICATOR ===== */
+.phase-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.phase-indicator .phase-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--accent-gradient);
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: white;
+    box-shadow: var(--glow-cyan);
+}
+
+.phase-indicator .phase-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.phase-indicator .phase-total {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+}
+
+/* Phase steps visualization */
+.phase-steps {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 0.25rem 0;
+}
+
+.phase-step {
+    width: 24px;
+    height: 4px;
+    background: var(--bg-input);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+.phase-step.completed {
+    background: var(--accent-green);
+    box-shadow: 0 0 6px var(--accent-green);
+}
+
+.phase-step.current {
+    background: var(--accent-cyan);
+    box-shadow: 0 0 8px var(--accent-cyan);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.phase-step.pending {
+    background: var(--bg-hover);
+}
+
+/* Real-time stat card enhancements */
+.stat-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card.updating::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--accent-gradient);
+    opacity: 0;
+    animation: stat-flash 0.5s ease-out;
+}
+
+@keyframes stat-flash {
+    0% { opacity: 0.3; }
+    100% { opacity: 0; }
+}
+
+.stat-value.counting {
+    animation: number-pop 0.3s ease-out;
+}
+
+@keyframes number-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Live scan indicator */
+.live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid var(--accent-green);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: var(--accent-green);
+}
+
+.live-indicator .live-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Scan progress summary */
+.scan-progress-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.progress-summary-item {
+    text-align: center;
+    padding: 0.5rem;
+}
+
+.progress-summary-item .label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.progress-summary-item .value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    margin-top: 0.25rem;
+}
+
 /* ===== MAIN CONTENT ===== */
 .main {
     background: var(--bg-primary);

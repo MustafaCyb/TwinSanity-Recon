@@ -137,6 +137,9 @@ async def get_provider_models(_request: Request, _session: dict = Depends(requir
     """
     Get available models per provider from config.yaml.
     Used for dynamic model selection in the UI.
+    
+    For local Ollama: Shows config presets (default, reasoning, fast) always,
+    plus live models from Ollama when running. This provides consistent UX.
     """
     from dashboard.config import (
         GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, 
@@ -166,7 +169,7 @@ async def get_provider_models(_request: Request, _session: dict = Depends(requir
     # Build models for each provider
     result = {}
     
-    # Local Ollama - from running instance or config
+    # Local Ollama - ALWAYS show config presets first, then live models
     local_config = llm_config.get('local', {})
     local_config_models = local_config.get('models', {})
     result['local'] = {
@@ -174,22 +177,38 @@ async def get_provider_models(_request: Request, _session: dict = Depends(requir
         'name': 'Ollama (Local)',
         'models': []
     }
-    if local_models:
-        for model in local_models[:10]:  # Limit to 10
-            is_default = model == OLLAMA_LOCAL_MODEL or model == local_config_models.get('default')
-            result['local']['models'].append({
-                'id': model,
-                'name': model.replace(':latest', '').replace(':', ' ').title(),
-                'default': is_default
-            })
-    elif local_config_models:
-        # Use config models if Ollama not running
+    
+    # Always show config presets first (default, reasoning, fast)
+    seen_models = set()
+    if local_config_models and isinstance(local_config_models, dict):
         for key, model in local_config_models.items():
-            result['local']['models'].append({
-                'id': model,
-                'name': f"{model.split(':')[0].title()} ({key.title()})",
-                'default': key == 'default'
-            })
+            if model and model not in seen_models:
+                result['local']['models'].append({
+                    'id': model,
+                    'name': f"⭐ {model.split(':')[0].title()} ({key.title()})",
+                    'default': key == 'default',
+                    'preset': True
+                })
+                seen_models.add(model)
+    
+    # Add live models from Ollama if running (not already in presets)
+    if local_models:
+        for model in local_models[:10]:
+            if model and model not in seen_models:
+                result['local']['models'].append({
+                    'id': model,
+                    'name': model.replace(':latest', '').replace(':', ' ').title(),
+                    'default': False
+                })
+                seen_models.add(model)
+    
+    # If no models at all, show placeholder
+    if not result['local']['models']:
+        result['local']['models'] = [{
+            'id': 'llama3.2:3b',
+            'name': 'Llama 3.2 3B (Default)',
+            'default': True
+        }]
     
     # --- Helper to parse config models ---
     def get_models_list(config_key, default_models=None):
@@ -440,20 +459,34 @@ async def validate_llm_provider(request: Request, _session: dict = Depends(requi
              from dashboard.config import OLLAMA_LOCAL_HOST
              import httpx
              # Increased timeout for local models that need to load into VRAM
-             async with httpx.AsyncClient(timeout=60.0) as client:
+             async with httpx.AsyncClient(timeout=90.0) as client:
                 try:
-                    r = await client.post(
-                        f"{OLLAMA_LOCAL_HOST}/api/generate",
-                        json={"model": model, "prompt": "Hi", "stream": False}
-                    )
-                    if r.status_code == 200:
-                        success = True
+                    # First check if server is running
+                    health = await client.get(OLLAMA_LOCAL_HOST)
+                    if health.status_code != 200:
+                        message = f"Ollama server error: {health.status_code}"
                     else:
-                        message = f"Error {r.status_code}"
+                        # Try a minimal generation
+                        r = await client.post(
+                            f"{OLLAMA_LOCAL_HOST}/api/generate",
+                            json={"model": model, "prompt": "Hi", "stream": False, "options": {"num_predict": 5}}
+                        )
+                        if r.status_code == 200:
+                            success = True
+                        elif r.status_code == 404:
+                            message = f"Model '{model}' not found. Run: ollama pull {model}"
+                        else:
+                            error_text = r.text[:100].lower()
+                            if "alloc" in error_text or "memory" in error_text:
+                                message = "Out of memory - try a smaller model"
+                            else:
+                                message = f"Error {r.status_code}"
                 except httpx.TimeoutException:
-                     message = "Timeout (Model Loading)"
+                     message = "Timeout (Model may be loading)"
+                except httpx.ConnectError:
+                    message = "Cannot connect to Ollama. Run: ollama serve"
                 except Exception as e:
-                    message = str(e)
+                    message = str(e)[:80]
         
         latency = (time.time() - start_time) * 1000
         return {
@@ -464,7 +497,7 @@ async def validate_llm_provider(request: Request, _session: dict = Depends(requi
         
     except Exception as e:
         print(f"Validation error: {e}")
-        return {"success": False, "message": str(e)}
+        return {"success": False, "message": str(e)[:100]}
     from dashboard.llm_manager import get_llm_manager
     from dashboard.llm_cache import get_llm_cache
     from dashboard.scan_context import load_scan_results_for_llm
@@ -665,10 +698,14 @@ Respond to the user's latest message helpfully."""
     except Exception as e:
         raise HTTPException(503, f"Chat failed: {e}")
     
-    memory.add_message("assistant", response.content)
+    # Strip any <think> tags from response before returning to user
+    clean_content = re.sub(r'<think>[\s\S]*?</think>', '', response.content, flags=re.IGNORECASE).strip()
+    clean_content = re.sub(r'<\|think\|>[\s\S]*?<\|end_think\|>', '', clean_content, flags=re.IGNORECASE).strip()
+    
+    memory.add_message("assistant", clean_content)
     
     return {
-        "response": response.content,
+        "response": clean_content,
         "provider": response.provider,
         "model": response.model,
         "memory_stats": memory.get_stats()

@@ -12,6 +12,7 @@ class ScanState:
         self.scans: Dict[str, Dict] = {}
         self.websockets: Dict[str, List[WebSocket]] = {}
         self.chat_history: Dict[str, List[Dict]] = {}
+        self.cancelled_scans: Set[str] = set()  # Track cancelled scans
     
     def create_scan(self, config: Dict) -> str:
         scan_id = str(uuid.uuid4())[:8]
@@ -35,6 +36,23 @@ class ScanState:
     def get_scan(self, scan_id: str) -> Optional[Dict]:
         return self.scans.get(scan_id)
     
+    def cancel_scan(self, scan_id: str) -> bool:
+        """Mark a scan as cancelled. Returns True if scan was running."""
+        if scan_id in self.scans:
+            current_status = self.scans[scan_id].get("status")
+            if current_status in ("running", "pending"):
+                self.cancelled_scans.add(scan_id)
+                self.scans[scan_id]["status"] = "cancelling"
+                return True
+        return False
+    
+    def is_cancelled(self, scan_id: str) -> bool:
+        """Check if a scan has been cancelled."""
+        return scan_id in self.cancelled_scans
+    
+    def clear_cancelled(self, scan_id: str):
+        """Remove scan from cancelled set after it has stopped."""
+        self.cancelled_scans.discard(scan_id)
     
     async def hydrate(self, db):
         """Load recent scans from DB into memory."""
@@ -43,7 +61,10 @@ class ScanState:
             for s in recent_scans:
                 # Convert aiosqlite.Row to dict if needed
                 scan_data = dict(s)
-                self.scans[scan_data["scan_id"]] = scan_data
+                # Database uses 'id' column, not 'scan_id'
+                scan_key = scan_data.get("id") or scan_data.get("scan_id")
+                if scan_key:
+                    self.scans[scan_key] = scan_data
             
             # Mark any 'running' scans as 'interrupted' since we restarted
             for scan_id, scan in self.scans.items():

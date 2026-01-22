@@ -40,6 +40,35 @@ except ImportError:
 logger = logging.getLogger("LLMManager")
 
 
+def strip_thinking_tags(content: str) -> Tuple[str, Optional[str]]:
+    """
+    Strip <think>...</think> tags from LLM response content.
+    
+    Args:
+        content: Raw LLM response content
+        
+    Returns:
+        Tuple of (clean_content, thinking_content or None)
+    """
+    if not content:
+        return "", None
+    
+    thinking = None
+    
+    # Extract thinking content if present
+    think_match = re.search(r"<think>(.*?)</think>", content, re.DOTALL | re.IGNORECASE)
+    if think_match:
+        thinking = think_match.group(1).strip()
+    
+    # Remove all think tag variants
+    cleaned = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL | re.IGNORECASE)
+    cleaned = re.sub(r"<\|think\|>.*?<\|end_think\|>", "", cleaned, flags=re.DOTALL | re.IGNORECASE)
+    cleaned = re.sub(r"\[think\].*?\[/think\]", "", cleaned, flags=re.DOTALL | re.IGNORECASE)
+    cleaned = cleaned.strip()
+    
+    return cleaned, thinking
+
+
 class LLMOperation(Enum):
     """Types of LLM operations with different default providers."""
     ANALYSIS = "analysis"      # Scan result analysis
@@ -290,31 +319,56 @@ class LLMManager:
         
         # Try SDK first (with executor to avoid blocking)
         if GENAI_AVAILABLE:
-            loop = asyncio.get_event_loop()
-            model_obj = genai.GenerativeModel(model_name)
-            
-            response = await asyncio.wait_for(
-                loop.run_in_executor(
-                    None,
-                    lambda: model_obj.generate_content(
-                        prompt,
-                        generation_config=genai.GenerationConfig(
-                            temperature=temperature,
-                            max_output_tokens=max_tokens
+            try:
+                loop = asyncio.get_event_loop()
+                model_obj = genai.GenerativeModel(model_name)
+                
+                response = await asyncio.wait_for(
+                    loop.run_in_executor(
+                        None,
+                        lambda: model_obj.generate_content(
+                            prompt,
+                            generation_config=genai.GenerationConfig(
+                                temperature=temperature,
+                                max_output_tokens=max_tokens
+                            )
                         )
-                    )
-                ),
-                timeout=timeout
-            )
-            
-            return LLMResponse(
-                content=response.text,
-                provider="gemini",
-                model=model_name,
-                tokens_used=len(response.text) // 4  # Rough estimate
-            )
+                    ),
+                    timeout=timeout
+                )
+                
+                # Safely extract text
+                text = ""
+                if hasattr(response, 'text') and response.text:
+                    text = response.text
+                elif hasattr(response, 'candidates') and response.candidates:
+                    for candidate in response.candidates:
+                        if hasattr(candidate, 'content') and candidate.content:
+                            parts = getattr(candidate.content, 'parts', [])
+                            for part in parts:
+                                if hasattr(part, 'text') and part.text:
+                                    text = part.text
+                                    break
+                
+                if not text:
+                    raise Exception("Gemini returned empty response")
+                
+                return LLMResponse(
+                    content=text,
+                    provider="gemini",
+                    model=model_name,
+                    tokens_used=len(text) // 4
+                )
+            except asyncio.TimeoutError:
+                raise Exception(f"Gemini SDK timeout after {timeout}s")
+            except Exception as e:
+                if "quota" in str(e).lower() or "429" in str(e):
+                    raise Exception("Gemini quota exceeded")
+                raise
         
         # REST API fallback
+        import httpx
+        
         url = gemini_cfg.get("url", "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent")
         url = url.format(model=model_name)
         
@@ -331,19 +385,34 @@ class LLMManager:
             }
         }
         
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    text = data.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
-                    return LLMResponse(
-                        content=text,
-                        provider="gemini",
-                        model=model_name
-                    )
-                else:
-                    error_text = await resp.text()
-                    raise Exception(f"Gemini API error {resp.status}: {error_text[:100]}")
+        async with httpx.AsyncClient(timeout=httpx.Timeout(timeout, connect=15)) as client:
+            response = await client.post(url, json=payload, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                candidates = data.get('candidates', [])
+                text = ""
+                if candidates:
+                    content = candidates[0].get('content', {})
+                    parts = content.get('parts', [])
+                    if parts:
+                        text = parts[0].get('text', '')
+                
+                if not text:
+                    raise Exception("Gemini REST returned empty response")
+                
+                # Strip any thinking tags from response
+                clean_text, _ = strip_thinking_tags(text)
+                return LLMResponse(
+                    content=clean_text,
+                    provider="gemini",
+                    model=model_name
+                )
+            elif response.status_code == 429:
+                raise Exception("Gemini rate limited (429)")
+            else:
+                error_text = response.text[:100]
+                raise Exception(f"Gemini API error {response.status_code}: {error_text}")
     
     async def _call_ollama_cloud(
         self,
@@ -353,16 +422,17 @@ class LLMManager:
         max_tokens: int,
         timeout: int
     ) -> LLMResponse:
-        """Call Ollama Cloud API."""
+        """Call Ollama Cloud API using async HTTP."""
+        import httpx
+        
         cloud_cfg = self.config.get("providers", {}).get("ollama_cloud", {})
         host = cloud_cfg.get("host", "https://ollama.com")
         model_name = model or cloud_cfg.get("model", "llama3.1:latest")
         
         headers = {"Content-Type": "application/json"}
         if self.ollama_api_key:
-            headers["Authorization"] = self.ollama_api_key
+            headers["Authorization"] = f"Bearer {self.ollama_api_key}"
         
-        url = f"{host}/api/chat"
         payload = {
             "model": model_name,
             "messages": [{"role": "user", "content": prompt}],
@@ -373,19 +443,32 @@ class LLMManager:
             }
         }
         
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    content = data.get("message", {}).get("content", "")
-                    return LLMResponse(
-                        content=content,
-                        provider="ollama_cloud",
-                        model=model_name
-                    )
-                else:
-                    error_text = await resp.text()
-                    raise Exception(f"Ollama Cloud error {resp.status}: {error_text[:100]}")
+        async with httpx.AsyncClient(timeout=httpx.Timeout(timeout, connect=15)) as client:
+            response = await client.post(
+                f"{host}/api/chat",
+                json=payload,
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                content = data.get("message", {}).get("content", "")
+                if not content:
+                    raise Exception("Empty response from Ollama Cloud")
+                # Strip any thinking tags from response
+                clean_content, _ = strip_thinking_tags(content)
+                return LLMResponse(
+                    content=clean_content,
+                    provider="ollama_cloud",
+                    model=model_name
+                )
+            elif response.status_code == 429:
+                raise Exception("Rate limited by Ollama Cloud")
+            elif response.status_code == 404:
+                raise Exception(f"Model '{model_name}' not found on Ollama Cloud")
+            else:
+                error_text = response.text[:100]
+                raise Exception(f"Ollama Cloud error {response.status_code}: {error_text}")
     
     async def _call_ollama_local(
         self,
@@ -397,9 +480,8 @@ class LLMManager:
         enable_thinking: bool = False,
         structured_output: Optional[Dict] = None
     ) -> LLMResponse:
-        """Call local Ollama with async client."""
-        if not OLLAMA_AVAILABLE:
-            raise Exception("Ollama Python library not installed")
+        """Call local Ollama with async HTTP client."""
+        import httpx
         
         local_cfg = self.config.get("providers", {}).get("local", {})
         host = local_cfg.get("host", "http://127.0.0.1:11434")
@@ -408,57 +490,65 @@ class LLMManager:
         if enable_thinking:
             model_name = model or local_cfg.get("models", {}).get("reasoning", "deepseek-r1:8b")
         else:
-            model_name = model or local_cfg.get("models", {}).get("default", "llama3.1:latest")
+            model_name = model or local_cfg.get("models", {}).get("default", "llama3.2:3b")
         
-        client = OllamaAsyncClient(host=host)
-        
-        # Build options
+        # Build options with memory-safe defaults
         options = {
             "temperature": temperature,
-            "num_predict": max_tokens
+            "num_predict": min(max_tokens, 2048),
+            "num_ctx": 4096,  # Conservative for memory safety
         }
         
-        # Build request kwargs
-        kwargs = {
+        # Build messages
+        messages = [{"role": "user", "content": prompt}]
+        
+        # Build payload
+        payload = {
             "model": model_name,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": messages,
+            "stream": False,
             "options": options
         }
         
         # Add structured output if provided
         if structured_output:
-            kwargs["format"] = structured_output
-        
-        # Add thinking mode if supported
-        if enable_thinking and "deepseek" in model_name.lower():
-            # DeepSeek-R1 supports think parameter
-            kwargs["think"] = True
+            payload["format"] = structured_output
         
         try:
-            response = await asyncio.wait_for(
-                client.chat(**kwargs),
-                timeout=timeout
-            )
-            
-            content = response.get("message", {}).get("content", "")
-            thinking = None
-            
-            # Extract thinking content if present
-            if enable_thinking and "<think>" in content:
-                think_match = re.search(r"<think>(.*?)</think>", content, re.DOTALL)
-                if think_match:
-                    thinking = think_match.group(1).strip()
-                    content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
-            
-            return LLMResponse(
-                content=content,
-                provider="local",
-                model=model_name,
-                thinking=thinking
-            )
-            
-        except asyncio.TimeoutError:
-            raise Exception(f"Local Ollama timeout after {timeout}s")
+            async with httpx.AsyncClient(timeout=httpx.Timeout(timeout, connect=10)) as client:
+                response = await client.post(
+                    f"{host}/api/chat",
+                    json=payload
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    content = result.get("message", {}).get("content", "")
+                    
+                    if not content:
+                        raise Exception("Empty response from Ollama")
+                    
+                    # Use centralized think tag stripping
+                    clean_content, thinking = strip_thinking_tags(content)
+                    
+                    return LLMResponse(
+                        content=clean_content,
+                        provider="local",
+                        model=model_name,
+                        thinking=thinking
+                    )
+                elif response.status_code == 404:
+                    raise Exception(f"Model '{model_name}' not found. Run: ollama pull {model_name}")
+                else:
+                    error_text = response.text[:100]
+                    if "alloc" in error_text.lower() or "memory" in error_text.lower():
+                        raise Exception(f"Out of memory - try a smaller model")
+                    raise Exception(f"Ollama error {response.status_code}: {error_text}")
+                    
+        except httpx.TimeoutException:
+            raise Exception(f"Local Ollama timeout after {timeout}s - model may be loading")
+        except httpx.ConnectError:
+            raise Exception(f"Cannot connect to Ollama at {host}. Run: ollama serve")
     
     async def stream(
         self,
@@ -467,12 +557,14 @@ class LLMManager:
         provider: str = "local"
     ):
         """
-        Stream LLM response tokens.
+        Stream LLM response tokens using async HTTP.
         
         Yields:
             Dict with 'token' key for each token
         """
-        if provider != "local" or not OLLAMA_AVAILABLE:
+        import httpx
+        
+        if provider != "local":
             # Non-streaming fallback
             response = await self.call(prompt, preferred_provider=provider)
             yield {"token": response.content, "done": True}
@@ -480,19 +572,48 @@ class LLMManager:
         
         local_cfg = self.config.get("providers", {}).get("local", {})
         host = local_cfg.get("host", "http://127.0.0.1:11434")
-        model_name = model_override or local_cfg.get("models", {}).get("default", "llama3.1:latest")
+        model_name = model_override or local_cfg.get("models", {}).get("default", "llama3.2:3b")
         
-        client = OllamaAsyncClient(host=host)
-        
-        async for chunk in await client.chat(
-            model=model_name,
-            messages=[{"role": "user", "content": prompt}],
-            stream=True
-        ):
-            yield {
-                "token": chunk.get("message", {}).get("content", ""),
-                "done": chunk.get("done", False)
+        payload = {
+            "model": model_name,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": True,
+            "options": {
+                "num_ctx": 4096,
+                "num_predict": 2048,
             }
+        }
+        
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(120, connect=10)) as client:
+                async with client.stream(
+                    "POST",
+                    f"{host}/api/chat",
+                    json=payload
+                ) as response:
+                    if response.status_code != 200:
+                        yield {"token": f"Error: HTTP {response.status_code}", "done": True}
+                        return
+                    
+                    import json as json_mod
+                    async for line in response.aiter_lines():
+                        if line.strip():
+                            try:
+                                chunk = json_mod.loads(line)
+                                content = chunk.get("message", {}).get("content", "")
+                                done = chunk.get("done", False)
+                                yield {
+                                    "token": content,
+                                    "done": done
+                                }
+                            except json_mod.JSONDecodeError:
+                                continue
+        except httpx.TimeoutException:
+            yield {"token": "Error: Request timeout", "done": True}
+        except httpx.ConnectError:
+            yield {"token": "Error: Cannot connect to Ollama", "done": True}
+        except Exception as e:
+            yield {"token": f"Error: {str(e)[:50]}", "done": True}
     
     def _log_call(self, provider: str, operation: LLMOperation, prompt_size: int, response: LLMResponse):
         """Log LLM call for auditing."""
