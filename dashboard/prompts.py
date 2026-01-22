@@ -432,7 +432,7 @@ def build_chat_prompt(
         history: Previous messages [{"role": "user/assistant", "content": "..."}]
     
     Returns:
-        Formatted chat prompt
+        Formatted chat prompt.
     """
     history_str = ""
     if history:
