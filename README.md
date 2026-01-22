@@ -1,4 +1,4 @@
-# TwinSanity Recon V2
+# TwinSanity Recon
 
 <div align="center">
 
