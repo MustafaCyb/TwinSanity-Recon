@@ -12,6 +12,8 @@
 
 **An Advanced AI-Powered Reconnaissance & Vulnerability Assessment Platform**
 
+[![Notion](https://img.shields.io/badge/Notion-View%20Demo%20%26%20Guide-000000?logo=notion&logoColor=white)](https://foam-gram-874.notion.site/TwinSanity-Recon-2ef80f079ebe80a99073dc323ce49776)
+
 [Features](#-features) • [Configuration](#️-configuration) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Architecture](#️-architecture) • [Security](#-security) • [Troubleshooting](#-troubleshooting) • [License](#-license)
 
 </div>
