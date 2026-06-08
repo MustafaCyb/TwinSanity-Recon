@@ -9,10 +9,7 @@
     <meta http-equiv="Expires" content="0">
     <link rel="icon" type="image/png" href="/static/favicon.png">
     <title>TwinSanity Recon V2</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+    <script src="/static/vendor/chart.umd.js?v=4.4.1"></script>
     <link rel="stylesheet" href="/static/css/style.css?v=20260115a">
 </head>
 
@@ -1282,7 +1279,7 @@
         </aside>
     </div>
 
-    <script src="/static/js/main.js?v=20260115e"></script>
+    <script src="/static/js/main.js?v=20260607a"></script>
     <script>
         // ============================================================
         // AI Provider Management
@@ -1293,22 +1290,30 @@
 
         async function loadProviderModels() {
             try {
-                const response = await fetch('/api/llm/provider-models');
+                const response = await fetchWithTimeout('/api/llm/provider-models', {}, 4000);
                 if (response.ok) {
                     providerModelsCache = await response.json();
                     console.log('Loaded provider models from config:', providerModelsCache);
-                    // Trigger initial population
-                    onProviderChange();
+                    // Populate the selector without running an expensive connection test on page load.
+                    onProviderChange(false);
                 }
             } catch (error) {
                 console.error('Failed to load provider models:', error);
+                const statusBadge = document.getElementById('modelConnectionStatus');
+                if (statusBadge) {
+                    statusBadge.style.display = 'inline-block';
+                    statusBadge.textContent = 'Models unavailable';
+                    statusBadge.className = 'badge badge-sm badge-error';
+                    statusBadge.style.backgroundColor = '#e74c3c';
+                }
             }
         }
 
-        function onProviderChange() {
+        function onProviderChange(validateConnection = true) {
             const providerSelect = document.getElementById('aiProviderSelect');
             const modelSection = document.getElementById('providerModelSection');
             const modelSelect = document.getElementById('providerModelSelect');
+            const statusBadge = document.getElementById('modelConnectionStatus');
 
             if (!providerSelect || !modelSection || !modelSelect) return;
 
@@ -1339,8 +1344,14 @@
                 modelSelect.innerHTML = '<option value="default">Default</option>';
             }
 
-            // Validate connection on provider change
-            validateProviderConnection();
+            if (validateConnection) {
+                validateProviderConnection();
+            } else if (statusBadge) {
+                statusBadge.style.display = 'inline-block';
+                statusBadge.textContent = 'Ready';
+                statusBadge.className = 'badge badge-sm badge-success';
+                statusBadge.style.backgroundColor = '#2ecc71';
+            }
         }
 
         // Validate LLM connection
@@ -1370,11 +1381,11 @@
             statusBadge.style.backgroundColor = '#f39c12'; // Warning orange
 
             try {
-                const response = await fetch('/api/llm/validate', {
+                const response = await fetchWithTimeout('/api/llm/validate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ provider, model })
-                });
+                }, 6000);
 
                 const result = await response.json();
 

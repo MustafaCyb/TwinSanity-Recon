@@ -53,6 +53,13 @@ class UIScheduler {
 // Global UI scheduler instance
 const uiScheduler = new UIScheduler();
 
+function fetchWithTimeout(resource, options = {}, timeoutMs = 8000) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(resource, { ...options, signal: controller.signal })
+        .finally(() => clearTimeout(timeout));
+}
+
 // ===== AUTHENTICATION HELPERS =====
 async function handleLogout() {
     try {
@@ -2850,7 +2857,7 @@ class TwinSanityDashboard {
     // Check LLM status and display in UI
     async checkLLMStatus() {
         try {
-            const response = await fetch('/api/llm/status');
+            const response = await fetchWithTimeout('/api/llm/status', {}, 4000);
             const data = await response.json();
 
             // New API returns { status: 'online', providers: {...} }
@@ -2895,6 +2902,10 @@ class TwinSanityDashboard {
             return status;
         } catch (error) {
             console.error('LLM status check failed:', error);
+            const statusDiv = document.getElementById('providerStatus');
+            if (statusDiv) {
+                statusDiv.innerHTML = '<span class="status-dot disconnected"></span><span class="status-text">LLM status unavailable</span>';
+            }
             return null;
         }
     }

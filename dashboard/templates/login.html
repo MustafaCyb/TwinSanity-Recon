@@ -7,9 +7,6 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <link rel="icon" type="image/png" href="/static/favicon.png">
     <title>TwinSanity Recon V2 - Login</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
     <style>
         :root {
             --bg-primary: #000000;
@@ -456,10 +453,17 @@
     </div>
 
     <script>
+        function fetchWithTimeout(resource, options = {}, timeoutMs = 8000) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), timeoutMs);
+            return fetch(resource, { ...options, signal: controller.signal })
+                .finally(() => clearTimeout(timeout));
+        }
+
         // Check if this is first-time setup or login
         async function checkSetupStatus() {
             try {
-                const response = await fetch('/api/auth/check-setup');
+                const response = await fetchWithTimeout('/api/auth/check-setup', {}, 5000);
                 const data = await response.json();
 
                 if (data.initialized) {
@@ -473,6 +477,10 @@
                 }
             } catch (error) {
                 console.error('Failed to check setup status:', error);
+                const errorText = document.getElementById('setupErrorText');
+                const errorDiv = document.getElementById('setupError');
+                errorText.textContent = 'Could not check setup status. Refresh the page or restart the dashboard.';
+                errorDiv.classList.add('show');
             }
         }
 
@@ -517,11 +525,11 @@
             btn.classList.add('loading');
 
             try {
-                const response = await fetch(endpoint, {
+                const response = await fetchWithTimeout(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
-                });
+                }, 10000);
 
                 const data = await response.json();
 
@@ -577,11 +585,11 @@
             btn.classList.add('loading');
 
             try {
-                const response = await fetch(endpoint, {
+                const response = await fetchWithTimeout(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
-                });
+                }, 10000);
 
                 const data = await response.json();
 

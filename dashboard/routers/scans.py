@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 
 from dashboard.config import PROJECT_ROOT, logger, TEMPLATES_DIR
 from dashboard.models import ScanConfig, ScanResponse, VisibilityUpdate
+from dashboard.template_compat import template_response
 
 router = APIRouter(tags=["Scans"])
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -17,15 +18,16 @@ RESULTS_DIR = PROJECT_ROOT / "results"
 
 
 @router.get("/", response_class=HTMLResponse)
+@router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
     """Serve the main dashboard page"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return template_response(templates, request, "index.html")
 
 
 @router.get("/island", response_class=HTMLResponse)
 async def island_view(request: Request):
     """Serve the TwinSanity Island View - Gamified Mode"""
-    return templates.TemplateResponse("island_view.html", {"request": request})
+    return template_response(templates, request, "island_view.html")
 
 
 # IMPORTANT: This route MUST be defined BEFORE any /api/scans/{scan_id} routes

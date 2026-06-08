@@ -17,6 +17,7 @@ from dashboard.dependencies import (
     hash_password, verify_password, validate_password_strength, require_auth
 )
 from dashboard.models import SetupRequest, LoginRequest
+from dashboard.template_compat import template_response
 
 router = APIRouter(tags=["Authentication"])
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -28,19 +29,19 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     """Serve login/setup page"""
-    return templates.TemplateResponse("login.html", {"request": request})
+    return template_response(templates, request, "login.html")
 
 
 @router.get("/public", response_class=HTMLResponse)
 async def public_scans_page(request: Request):
     """Serve public scans page - accessible without authentication"""
-    return templates.TemplateResponse("public_scans.html", {"request": request})
+    return template_response(templates, request, "public_scans.html")
 
 
 @router.get("/setup", response_class=HTMLResponse)
 async def setup_page(request: Request):
     """Alias for login page (handles first-time setup)"""
-    return templates.TemplateResponse("login.html", {"request": request})
+    return template_response(templates, request, "login.html")
 
 
 # =============================================================================

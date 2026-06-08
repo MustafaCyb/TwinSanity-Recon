@@ -72,7 +72,7 @@ async def get_llm_status(_request: Request, _session: dict = Depends(require_aut
     local_available = False
     local_models = []
     try:
-        async with httpx.AsyncClient(timeout=3) as client:
+        async with httpx.AsyncClient(timeout=1.0) as client:
             r = await client.get(f"{OLLAMA_LOCAL_HOST}/api/tags")
             if r.status_code == 200:
                 local_available = True
@@ -158,7 +158,7 @@ async def get_provider_models(_request: Request, _session: dict = Depends(requir
     local_models = []
     local_available = False
     try:
-        async with httpx.AsyncClient(timeout=3) as client:
+        async with httpx.AsyncClient(timeout=1.0) as client:
             r = await client.get(f"{OLLAMA_LOCAL_HOST}/api/tags")
             if r.status_code == 200:
                 local_available = True
@@ -352,7 +352,7 @@ async def validate_llm_provider(request: Request, _session: dict = Depends(requi
                 return {"success": False, "message": "API Key not configured"}
             
             import httpx
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=5.0) as client:
                 resp = await client.post(
                     "https://api.openai.com/v1/chat/completions",
                     headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
@@ -373,7 +373,7 @@ async def validate_llm_provider(request: Request, _session: dict = Depends(requi
                 return {"success": False, "message": "API Key not configured"}
                 
             import httpx
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=5.0) as client:
                 resp = await client.post(
                     "https://api.anthropic.com/v1/messages",
                     headers={
@@ -400,7 +400,7 @@ async def validate_llm_provider(request: Request, _session: dict = Depends(requi
             # Simple check via URL construction
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
             import httpx
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=5.0) as client:
                 resp = await client.post(
                     url,
                     json={"contents": [{"parts": [{"text": "Hi"}]}]}
@@ -419,7 +419,7 @@ async def validate_llm_provider(request: Request, _session: dict = Depends(requi
                 return {"success": False, "message": "Host or API Key not configured"}
                 
             import httpx
-            async with httpx.AsyncClient(timeout=20.0) as client:
+            async with httpx.AsyncClient(timeout=5.0) as client:
                 resp = await client.post(
                     f"{OLLAMA_CLOUD_HOST}/api/generate",
                     headers={"Authorization": f"Bearer {OLLAMA_API_KEY}"},
@@ -438,7 +438,7 @@ async def validate_llm_provider(request: Request, _session: dict = Depends(requi
                 return {"success": False, "message": "GitHub Token not configured"}
                 
             import httpx
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=5.0) as client:
                 # GitHub Models endpoint structure varies, using Azure AI inference format
                 resp = await client.post(
                     "https://models.inference.ai.azure.com/chat/completions",
@@ -455,34 +455,22 @@ async def validate_llm_provider(request: Request, _session: dict = Depends(requi
                     message = f"Error {resp.status_code}: {resp.text[:100]}"
                     
         elif provider == 'local':
-             # Local is usually safe if it shows up, but we can verify
+             # Keep local validation lightweight; do not load a model during page startup.
              from dashboard.config import OLLAMA_LOCAL_HOST
              import httpx
-             # Increased timeout for local models that need to load into VRAM
-             async with httpx.AsyncClient(timeout=90.0) as client:
+             async with httpx.AsyncClient(timeout=2.0) as client:
                 try:
-                    # First check if server is running
-                    health = await client.get(OLLAMA_LOCAL_HOST)
-                    if health.status_code != 200:
-                        message = f"Ollama server error: {health.status_code}"
+                    tags = await client.get(f"{OLLAMA_LOCAL_HOST}/api/tags")
+                    if tags.status_code != 200:
+                        message = f"Ollama server error: {tags.status_code}"
                     else:
-                        # Try a minimal generation
-                        r = await client.post(
-                            f"{OLLAMA_LOCAL_HOST}/api/generate",
-                            json={"model": model, "prompt": "Hi", "stream": False, "options": {"num_predict": 5}}
-                        )
-                        if r.status_code == 200:
+                        models = [m.get("name") for m in tags.json().get("models", [])]
+                        if not model or model in models:
                             success = True
-                        elif r.status_code == 404:
-                            message = f"Model '{model}' not found. Run: ollama pull {model}"
                         else:
-                            error_text = r.text[:100].lower()
-                            if "alloc" in error_text or "memory" in error_text:
-                                message = "Out of memory - try a smaller model"
-                            else:
-                                message = f"Error {r.status_code}"
+                            message = f"Model '{model}' not found. Run: ollama pull {model}"
                 except httpx.TimeoutException:
-                     message = "Timeout (Model may be loading)"
+                     message = "Timeout connecting to Ollama"
                 except httpx.ConnectError:
                     message = "Cannot connect to Ollama. Run: ollama serve"
                 except Exception as e:

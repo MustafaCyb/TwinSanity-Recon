@@ -28,6 +28,13 @@ def _get_cvss_color_class(score: Optional[float]) -> str:
         return "text-medium"
     return "text-low"
 
+def _cvss_score(cve: Dict[str, Any]) -> float:
+    """Return a numeric CVSS score for sorting and severity counts."""
+    try:
+        return float(cve.get('cvss') or 0.0)
+    except (ValueError, TypeError):
+        return 0.0
+
 def generate_html_report(aggregated_data: Dict[str, Any], output_file: str = "report.html") -> Tuple[bool, str]:
     """Generates the main HTML report."""
     try:
@@ -55,10 +62,10 @@ def generate_html_report(aggregated_data: Dict[str, Any], output_file: str = "re
         total_cves_found = len(all_cves)
         
         # Compute severity counts from CVSS scores
-        critical_count = sum(1 for c in all_cves if (c.get('cvss') or 0) >= 9.0)
-        high_count = sum(1 for c in all_cves if 7.0 <= (c.get('cvss') or 0) < 9.0)
-        medium_count = sum(1 for c in all_cves if 4.0 <= (c.get('cvss') or 0) < 7.0)
-        low_count = sum(1 for c in all_cves if (c.get('cvss') or 0) < 4.0)
+        critical_count = sum(1 for c in all_cves if _cvss_score(c) >= 9.0)
+        high_count = sum(1 for c in all_cves if 7.0 <= _cvss_score(c) < 9.0)
+        medium_count = sum(1 for c in all_cves if 4.0 <= _cvss_score(c) < 7.0)
+        low_count = sum(1 for c in all_cves if _cvss_score(c) < 4.0)
         
         # --- Conditional HTML blocks for LLM data ---
         llm_summary_html = ""
@@ -67,25 +74,59 @@ def generate_html_report(aggregated_data: Dict[str, Any], output_file: str = "re
         report_notice_html = ""
 
         if is_llm_run:
+            summary_items_html = ''.join(f"<li>{_escape(p)}</li>" for p in summary_points)
+            high_risk_assets_html = ''.join(
+                f"<tr><td>{_get_severity_badge(a.get('severity'))}</td>"
+                f"<td>{_escape(a.get('ip'))}</td>"
+                f"<td>{_escape(a.get('hostname'))}</td>"
+                f"<td>{_escape(a.get('reason'))}</td></tr>"
+                for a in high_risk_assets
+            ) or "<tr><td colspan='4'>No high-risk assets highlighted by the LLM.</td></tr>"
+            recommended_actions_html = ''.join(
+                f"<tr><td>{_get_severity_badge(a.get('priority'))}</td>"
+                f"<td>{_escape(a.get('action'))}</td>"
+                f"<td>{_escape(a.get('justification'))}</td></tr>"
+                for a in recommended_actions
+            ) or "<tr><td colspan='3'>No specific actions recommended by the LLM.</td></tr>"
+
             llm_summary_html = f"""
-            <div class='card'><h2>LLM Executive Summary</h2><ul>{''.join(f"<li>{_escape(p)}</li>" for p in summary_points)}</ul></div>
+            <div class='card'><h2>LLM Executive Summary</h2><ul>{summary_items_html}</ul></div>
             """
             llm_assets_html = f"""
             <div class='card'><h2>LLM Highlighted: High-Risk Assets</h2>
                 <table><thead><tr><th>Severity</th><th>IP Address</th><th>Hostname</th><th>Reason</th></tr></thead><tbody>
-                {''.join(f"<tr><td>{_get_severity_badge(a.get('severity'))}</td><td>{_escape(a.get('ip'))}</td><td>{_escape(a.get('hostname'))}</td><td>{_escape(a.get('reason'))}</td></tr>" for a in high_risk_assets) or "<tr><td colspan='4'>No high-risk assets highlighted by the LLM.</td></tr>"}
+                {high_risk_assets_html}
                 </tbody></table>
             </div>
             """
             llm_actions_html = f"""
             <div class='card'><h2>LLM Recommended Actions</h2>
                 <table><thead><tr><th>Priority</th><th>Action</th><th>Justification</th></tr></thead><tbody>
-                {''.join(f"<tr><td>{_get_severity_badge(a.get('priority'))}</td><td>{_escape(a.get('action'))}</td><td>{_escape(a.get('justification'))}</td></tr>" for a in recommended_actions) or "<tr><td colspan='3'>No specific actions recommended by the LLM.</td></tr>"}
+                {recommended_actions_html}
                 </tbody></table>
             </div>
             """
         else:
             report_notice_html = "<div class='card notice'><p><strong>Raw Data Report:</strong> This report displays the complete vulnerability data from the scan. The LLM analysis was not run.</p></div>"
+
+        cve_rows_html = ''.join(
+            f"""<tr>
+                    <td><strong>{_escape(cve.get('id'))}</strong></td>
+                    <td class='{_get_cvss_color_class(cve.get('cvss'))}'>{_escape(cve.get('cvss')) or 'N/A'}</td>
+                    <td>{len(cve.get('affected_ips', []))}</td>
+                    <td>{_escape(cve.get('summary'))}</td>
+                    <td class='ip-list'>{', '.join(_escape(ip) for ip in cve.get('affected_ips', []))}</td>
+                </tr>"""
+            for cve in sorted(all_cves, key=_cvss_score, reverse=True)
+        ) or "<tr><td colspan='5'>No CVEs with details were found during the scan.</td></tr>"
+
+        host_rows_html = ''.join(
+            f"<tr><td>{_escape(', '.join(h.get('hosts', [])) or 'N/A')}</td>"
+            f"<td>{_escape(h.get('ip'))}</td>"
+            f"<td>{', '.join(map(str, h.get('ports', []))) or '—'}</td>"
+            f"<td>{', '.join(_escape(c.get('id') or c.get('cve_id') or 'CVE-?') for c in h.get('cves', [])) or '—'}</td></tr>"
+            for h in host_details
+        ) or "<tr><td colspan='4'>No host-level CVE data.</td></tr>"
 
         # --- Main HTML Template with Severity Stats ---
         html_template = f"""
@@ -169,15 +210,7 @@ def generate_html_report(aggregated_data: Dict[str, Any], output_file: str = "re
                 <th onclick="sortTable(4)">Affected IPs</th>
             </tr></thead>
             <tbody>
-            {''.join(
-                f"""<tr>
-                    <td><strong>{_escape(cve.get('id'))}</strong></td>
-                    <td class='{_get_cvss_color_class(cve.get('cvss'))}'>{_escape(cve.get('cvss')) or 'N/A'}</td>
-                    <td>{len(cve.get('affected_ips', []))}</td>
-                    <td>{_escape(cve.get('summary'))}</td>
-                    <td class='ip-list'>{', '.join(_escape(ip) for ip in cve.get('affected_ips', []))}</td>
-                </tr>""" for cve in sorted(all_cves, key=lambda x: (float(x.get('cvss') or 0.0)), reverse=True)
-            ) or "<tr><td colspan='5'>No CVEs with details were found during the scan.</td></tr>"}
+            {cve_rows_html}
             </tbody>
         </table>
     </div>
@@ -190,13 +223,7 @@ def generate_html_report(aggregated_data: Dict[str, Any], output_file: str = "re
         <table>
             <thead><tr><th>Host</th><th>IP</th><th>Ports</th><th>CVEs</th></tr></thead>
             <tbody>
-            {''.join(
-                f"<tr><td>{_escape(', '.join(h.get('hosts', [])) or 'N/A')}</td>"
-                f"<td>{_escape(h.get('ip'))}</td>"
-                f"<td>{', '.join(map(str, h.get('ports', []))) or '—'}</td>"
-                f"<td>{', '.join(_escape(c.get('id') or c.get('cve_id') or 'CVE-?') for c in h.get('cves', [])) or '—'}</td></tr>"
-                for h in host_details
-            ) or "<tr><td colspan='4'>No host-level CVE data.</td></tr>"}
+            {host_rows_html}
             </tbody>
         </table>
     </div>
