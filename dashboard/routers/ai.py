@@ -7,7 +7,6 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from dashboard.config import logger, RESULTS_DIR
-from dashboard.scan_context import load_scan_results_for_llm
 
 router = APIRouter(prefix="/api", tags=["AI Analysis"])
 
@@ -25,14 +24,34 @@ class AIAnalysisRequest(BaseModel):
     scan_id: str = Field(..., description="Scan ID to analyze")
 
 
+async def _require_scan_access(scan_id: str, request: Request):
+    """Return the database and scan after enforcing scan read access."""
+    from dashboard.database import get_db
+
+    db = await get_db()
+    scan = await db.get_scan_by_id(scan_id)
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+
+    user_id = getattr(request.state, "user_id", None)
+    is_primary_admin = getattr(request.state, "is_primary_admin", False)
+    if (
+        not is_primary_admin
+        and scan.get("user_id") != user_id
+        and scan.get("visibility") != "public"
+    ):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    return db, scan
+
+
 @router.get("/ai-analysis/{scan_id}")
-async def get_ai_analysis_report(scan_id: str):
+async def get_ai_analysis_report(scan_id: str, request: Request):
     """
     GET: Retrieve existing AI analysis report (does NOT auto-run).
     Returns None if no report exists.
     """
-    from dashboard.database import get_db
-    db = await get_db()
+    db, _ = await _require_scan_access(scan_id, request)
     
     existing = await db.get_ai_analysis_report(scan_id)
     if existing:
@@ -43,13 +62,12 @@ async def get_ai_analysis_report(scan_id: str):
 
 # Legacy endpoint for backward compatibility with frontend
 @router.get("/analysis/{scan_id}")
-async def get_analysis_legacy(scan_id: str):
+async def get_analysis_legacy(scan_id: str, request: Request):
     """
     Legacy endpoint - Get saved AI analysis for a scan.
     Returns analysis from database in old format.
     """
-    from dashboard.database import get_db
-    db = await get_db()
+    db, _ = await _require_scan_access(scan_id, request)
     
     # Try V2 AI analysis report first
     ai_report = await db.get_ai_analysis_report(scan_id)
@@ -83,17 +101,17 @@ async def get_analysis_legacy(scan_id: str):
 
 
 @router.post("/ai-analysis")
-async def run_ai_analysis(req: AIAnalysisRequest):
+async def run_ai_analysis(req: AIAnalysisRequest, request: Request):
     """
     Get or run V1-style AI analysis on scan results.
     Uses Gemini -> Ollama Cloud -> Local pipeline for each chunk.
     Returns aggregated analysis report including tools findings.
     """
-    from dashboard.database import get_db
-    from dashboard.services.ai_service import run_ai_analysis_on_results
-    
-    db = await get_db()
     scan_id = req.scan_id
+    db, _ = await _require_scan_access(scan_id, request)
+
+    from dashboard.scan_context import load_scan_results_for_llm
+    from dashboard.services.ai_service import run_ai_analysis_on_results
     
     # Check for existing AI report
     existing = await db.get_ai_analysis_report(scan_id)
@@ -131,12 +149,12 @@ async def run_ai_analysis(req: AIAnalysisRequest):
 
 
 @router.post("/analyze")
-async def analyze_scan_legacy(req: AIAnalysisRequest):
+async def analyze_scan_legacy(req: AIAnalysisRequest, request: Request):
     """
     Legacy endpoint - redirects to V1-style AI analysis.
     Use /api/ai-analysis for new implementations.
     """
-    result = await run_ai_analysis(req)
+    result = await run_ai_analysis(req, request)
     
     # Convert to legacy format for backward compatibility
     if result.get("report"):
@@ -165,11 +183,6 @@ async def chat_with_ai(request: Request):
     Main chat endpoint for AI assistant with COMPREHENSIVE DATA SEARCH.
     Searches ALL instances of vulnerabilities across ALL hosts - not just unique CVE IDs.
     """
-    from dashboard.llm_manager import get_llm_manager, LLMOperation
-    from dashboard.llm_advanced import ConversationMemory
-    from dashboard.state import conversation_memories
-    from dashboard.scan_context import load_scan_results_for_llm, ScanContextManager
-    from dashboard.prompts import build_chat_prompt
     import re
     from collections import defaultdict
     
@@ -178,20 +191,30 @@ You help security analysts understand scan results, vulnerabilities, and provide
 CRITICAL: Report ALL instances of vulnerabilities across ALL affected hosts. Same CVE on multiple hosts = multiple findings.
 Be thorough and report the COMPLETE picture of the security landscape."""
     
-    llm_manager = get_llm_manager()
-    
     body = await request.json()
     scan_id = body.get("scan_id")
     message = body.get("message")
     provider = body.get("provider", "local")
     use_context = body.get("use_context", True)
     
+    if not scan_id:
+        return {"response": "Missing scan_id or message", "error": True}
+
+    db, _ = await _require_scan_access(scan_id, request)
+
+    if not message:
+        return {"response": "Missing scan_id or message", "error": True}
+
+    from dashboard.llm_manager import get_llm_manager, LLMOperation
+    from dashboard.llm_advanced import ConversationMemory
+    from dashboard.state import conversation_memories
+    from dashboard.scan_context import load_scan_results_for_llm, ScanContextManager
+
+    llm_manager = get_llm_manager()
+
     if not llm_manager:
         return {"response": "AI service not available. Please check LLM configuration.", "error": True}
-    
-    if not scan_id or not message:
-        return {"response": "Missing scan_id or message", "error": True}
-    
+
     # Memory management
     if scan_id not in conversation_memories:
         conversation_memories[scan_id] = ConversationMemory(max_tokens=8000)  # Increased for full data
@@ -420,9 +443,6 @@ Be thorough and report the COMPLETE picture of the security landscape."""
             logger.warning(f"Failed to load/search scan context: {e}")
     
     # Load previous conversation from database if memory is empty
-    from dashboard.database import get_db
-    db = await get_db()
-    
     if len(memory.messages) == 0:
         try:
             db_history = await db.get_chat_history(scan_id, limit=20)
@@ -502,20 +522,7 @@ Provide a comprehensive answer based on the scan data above:"""
 @router.get("/chat/history/{scan_id}")
 async def get_chat_history(scan_id: str, request: Request):
     """Get chat history for a scan from database."""
-    from dashboard.database import get_db
-    db = await get_db()
-    
-    # Verify user has access to this scan
-    scan = await db.get_scan_by_id(scan_id)
-    if not scan:
-        raise HTTPException(status_code=404, detail="Scan not found")
-    
-    user_id = getattr(request.state, "user_id", None)
-    is_super_admin = getattr(request.state, "is_primary_admin", False)
-    
-    if not is_super_admin:
-        if scan.get('user_id') != user_id and scan.get('visibility') != 'public':
-            raise HTTPException(status_code=403, detail="Access denied")
+    db, _ = await _require_scan_access(scan_id, request)
     
     try:
         history = await db.get_chat_history(scan_id)
@@ -528,20 +535,7 @@ async def get_chat_history(scan_id: str, request: Request):
 @router.post("/chat/history/{scan_id}")
 async def save_chat_message_endpoint(scan_id: str, request: Request):
     """Save a chat message to database."""
-    from dashboard.database import get_db
-    db = await get_db()
-    
-    # Verify user has access to this scan
-    scan = await db.get_scan_by_id(scan_id)
-    if not scan:
-        raise HTTPException(status_code=404, detail="Scan not found")
-    
-    user_id = getattr(request.state, "user_id", None)
-    is_super_admin = getattr(request.state, "is_primary_admin", False)
-    
-    if not is_super_admin:
-        if scan.get('user_id') != user_id and scan.get('visibility') != 'public':
-            raise HTTPException(status_code=403, detail="Access denied")
+    db, _ = await _require_scan_access(scan_id, request)
     
     body = await request.json()
     role = body.get("role", "user")
