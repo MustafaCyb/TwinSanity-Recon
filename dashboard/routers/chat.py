@@ -102,7 +102,7 @@ async def get_llm_status(_request: Request, _session: dict = Depends(require_aut
             "available": bool(GEMINI_API_KEY), 
             "name": "Google Gemini",
             "configured": bool(GEMINI_API_KEY),
-            "model": GEMINI_MODEL  # From config.yaml: gemini-2.5-flash
+            "model": GEMINI_MODEL  # Configured Gemini model
         },
         "openai": {
             "available": bool(OPENAI_API_KEY), 

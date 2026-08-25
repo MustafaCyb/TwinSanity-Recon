@@ -262,7 +262,7 @@ PROVIDERS_CONFIG = LLM_CONFIG.get('providers', {})
 # Gemini settings
 GEMINI_CONFIG = PROVIDERS_CONFIG.get('gemini', LLM_CONFIG.get('gemini', {}))
 GEMINI_URL = GEMINI_CONFIG.get('url', "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent")
-GEMINI_MODEL = GEMINI_CONFIG.get('model', "gemini-2.5-flash")
+GEMINI_MODEL = GEMINI_CONFIG.get('model', "gemini-3.6-flash")
 GEMINI_MAX_RETRIES = GEMINI_CONFIG.get('max_retries', 4)
 GEMINI_BACKOFF = GEMINI_CONFIG.get('backoff_base', 3)
 

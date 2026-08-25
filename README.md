@@ -117,7 +117,7 @@ llm:
   
   providers:
     gemini:
-      model: gemini-2.0-flash    # Model to use
+      model: gemini-3.6-flash    # Stable model recommended by Google
       timeout: 90                 # Request timeout in seconds
     
     local:                        # Local Ollama configuration

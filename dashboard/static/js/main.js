@@ -3147,39 +3147,44 @@ function toggleConfig() {
 }
 
 // Report Tab Switching
-function switchReportTab(tab) {
-    const findingsPanel = document.getElementById('findingsPanel');
-    const aiReportPanel = document.getElementById('aiReportPanel');
-    const toolsFindingsPanel = document.getElementById('toolsFindingsPanel');
-    const tabs = document.querySelectorAll('.report-tab');
+function switchReportTab(tab, { focusTab = false } = {}) {
+    const tabs = Array.from(document.querySelectorAll('.report-tab[role="tab"]'));
+    const selectedTab = tabs.find(item => item.dataset.tab === tab);
 
-    // Update tab styles
-    tabs.forEach(t => {
-        if (t.dataset.tab === tab) {
-            t.classList.add('active');
-            t.style.color = 'var(--accent-cyan)';
-            t.style.borderBottomColor = 'var(--accent-cyan)';
-        } else {
-            t.classList.remove('active');
-            t.style.color = 'var(--text-muted)';
-            t.style.borderBottomColor = 'transparent';
+    if (!selectedTab) return;
+
+    tabs.forEach(item => {
+        const isActive = item === selectedTab;
+        item.classList.toggle('active', isActive);
+        item.setAttribute('aria-selected', String(isActive));
+        item.tabIndex = isActive ? 0 : -1;
+
+        const panelId = item.getAttribute('aria-controls');
+        const panel = panelId ? document.getElementById(panelId) : null;
+        if (panel) {
+            panel.classList.toggle('hidden', !isActive);
+            panel.hidden = !isActive;
+            panel.classList.remove('tab-panel-enter');
+            if (isActive) {
+                requestAnimationFrame(() => panel.classList.add('tab-panel-enter'));
+            }
         }
     });
 
-    // Show/hide panels
-    if (findingsPanel) findingsPanel.classList.add('hidden');
-    if (aiReportPanel) aiReportPanel.classList.add('hidden');
-    if (toolsFindingsPanel) toolsFindingsPanel.classList.add('hidden');
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    selectedTab.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'nearest',
+        inline: 'nearest'
+    });
 
-    if (tab === 'findings') {
-        if (findingsPanel) findingsPanel.classList.remove('hidden');
-    } else if (tab === 'ai-report') {
-        if (aiReportPanel) aiReportPanel.classList.remove('hidden');
+    if (focusTab) selectedTab.focus();
+
+    if (tab === 'ai-report') {
         // Hide badge when viewed
         const badge = document.getElementById('aiReportBadge');
         if (badge) badge.classList.add('hidden');
     } else if (tab === 'tools-findings') {
-        if (toolsFindingsPanel) toolsFindingsPanel.classList.remove('hidden');
         // Load tools findings when tab is clicked
         if (window.dashboard?.currentScanId) {
             loadToolsFindings(window.dashboard.currentScanId);
@@ -3188,6 +3193,27 @@ function switchReportTab(tab) {
         const badge = document.getElementById('toolsFindingsBadge');
         if (badge) badge.classList.add('hidden');
     }
+}
+
+function initReportTabs() {
+    const tabList = document.getElementById('reportTabs');
+    if (!tabList) return;
+
+    tabList.addEventListener('keydown', event => {
+        const tabs = Array.from(tabList.querySelectorAll('.report-tab[role="tab"]'));
+        const currentIndex = tabs.indexOf(document.activeElement);
+        if (currentIndex < 0) return;
+
+        let nextIndex = null;
+        if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length;
+        if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        if (event.key === 'Home') nextIndex = 0;
+        if (event.key === 'End') nextIndex = tabs.length - 1;
+        if (nextIndex === null) return;
+
+        event.preventDefault();
+        switchReportTab(tabs[nextIndex].dataset.tab, { focusTab: true });
+    });
 }
 
 // HTML escape helper for standalone function context
@@ -3369,7 +3395,192 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Mission Control and Theme
     initMissionControl();
     initThemeToggle();
+    initReportTabs();
+    initResponsiveShell();
+    initDashboardActionsMenu();
 });
+
+const responsiveShellQuery = window.matchMedia('(max-width: 1279px)');
+const dashboardActionsQuery = window.matchMedia('(max-width: 1599px)');
+const responsiveShellState = {
+    activeDrawer: null,
+    previousFocus: null
+};
+
+function getDrawerElements() {
+    return {
+        nav: {
+            panel: document.getElementById('primarySidebar'),
+            trigger: document.getElementById('btnNavDrawer'),
+            close: document.getElementById('btnCloseNavDrawer')
+        },
+        chat: {
+            panel: document.getElementById('chatPanel'),
+            trigger: document.getElementById('btnChatDrawer'),
+            close: document.getElementById('btnCloseChatDrawer')
+        }
+    };
+}
+
+function syncDrawerAccessibility() {
+    const drawers = getDrawerElements();
+    const isCompact = responsiveShellQuery.matches;
+
+    Object.entries(drawers).forEach(([name, drawer]) => {
+        if (!drawer.panel || !drawer.trigger) return;
+        const isOpen = isCompact && responsiveShellState.activeDrawer === name;
+
+        drawer.panel.classList.toggle('drawer-open', isOpen);
+        drawer.trigger.setAttribute('aria-expanded', String(isOpen));
+        drawer.panel.inert = isCompact && !isOpen;
+
+        if (isCompact) {
+            drawer.panel.setAttribute('role', 'dialog');
+            drawer.panel.setAttribute('aria-modal', 'true');
+            drawer.panel.setAttribute('aria-hidden', String(!isOpen));
+        } else {
+            drawer.panel.removeAttribute('role');
+            drawer.panel.removeAttribute('aria-modal');
+            drawer.panel.removeAttribute('aria-hidden');
+        }
+    });
+
+    document.body.classList.toggle(
+        'shell-drawer-open',
+        isCompact && Boolean(responsiveShellState.activeDrawer)
+    );
+}
+
+function closeShellDrawers({ restoreFocus = true } = {}) {
+    const focusTarget = responsiveShellState.previousFocus;
+    responsiveShellState.activeDrawer = null;
+    responsiveShellState.previousFocus = null;
+    syncDrawerAccessibility();
+
+    if (restoreFocus && focusTarget instanceof HTMLElement && focusTarget.isConnected) {
+        focusTarget.focus();
+    }
+}
+
+function openShellDrawer(name, trigger) {
+    if (!responsiveShellQuery.matches) return;
+
+    const drawer = getDrawerElements()[name];
+    if (!drawer?.panel) return;
+
+    responsiveShellState.activeDrawer = name;
+    responsiveShellState.previousFocus = trigger || document.activeElement;
+    syncDrawerAccessibility();
+
+    requestAnimationFrame(() => {
+        const firstFocusTarget = drawer.close || drawer.panel.querySelector(
+            'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])'
+        );
+        firstFocusTarget?.focus();
+    });
+}
+
+function handleDrawerKeydown(event) {
+    const activeName = responsiveShellState.activeDrawer;
+    if (!responsiveShellQuery.matches || !activeName) return;
+
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        closeShellDrawers();
+        return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const panel = getDrawerElements()[activeName]?.panel;
+    if (!panel) return;
+
+    const focusable = Array.from(panel.querySelectorAll(
+        'button:not([disabled]), a[href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter(element => !element.hidden && element.getClientRects().length > 0);
+
+    if (focusable.length === 0) {
+        event.preventDefault();
+        panel.focus();
+        return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
+}
+
+function initResponsiveShell() {
+    const drawers = getDrawerElements();
+    const backdrop = document.getElementById('shellBackdrop');
+
+    drawers.nav.trigger?.addEventListener('click', event => openShellDrawer('nav', event.currentTarget));
+    drawers.chat.trigger?.addEventListener('click', event => openShellDrawer('chat', event.currentTarget));
+    drawers.nav.close?.addEventListener('click', () => closeShellDrawers());
+    drawers.chat.close?.addEventListener('click', () => closeShellDrawers());
+    backdrop?.addEventListener('click', () => closeShellDrawers());
+    document.addEventListener('keydown', handleDrawerKeydown);
+
+    responsiveShellQuery.addEventListener('change', event => {
+        if (!event.matches) closeShellDrawers({ restoreFocus: false });
+        syncDrawerAccessibility();
+    });
+
+    syncDrawerAccessibility();
+}
+
+function setDashboardActionsMenu(open, { restoreFocus = false } = {}) {
+    const container = document.getElementById('dashboardHeaderActions');
+    const toggle = document.getElementById('btnDashboardMore');
+    const menu = document.getElementById('dashboardSecondaryActions');
+    if (!container || !toggle || !menu) return;
+
+    const shouldOpen = dashboardActionsQuery.matches && open;
+    menu.classList.toggle('is-open', shouldOpen);
+    container.classList.toggle('menu-open', shouldOpen);
+    toggle.setAttribute('aria-expanded', String(shouldOpen));
+
+    if (restoreFocus) toggle.focus();
+}
+
+function initDashboardActionsMenu() {
+    const container = document.getElementById('dashboardHeaderActions');
+    const toggle = document.getElementById('btnDashboardMore');
+    const menu = document.getElementById('dashboardSecondaryActions');
+    if (!container || !toggle || !menu) return;
+
+    toggle.addEventListener('click', () => {
+        const willOpen = toggle.getAttribute('aria-expanded') !== 'true';
+        setDashboardActionsMenu(willOpen);
+        if (willOpen) {
+            requestAnimationFrame(() => menu.querySelector('button:not([disabled])')?.focus());
+        }
+    });
+
+    menu.addEventListener('click', event => {
+        if (event.target.closest('button')) setDashboardActionsMenu(false);
+    });
+
+    document.addEventListener('click', event => {
+        if (!container.contains(event.target)) setDashboardActionsMenu(false);
+    });
+
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+            event.preventDefault();
+            setDashboardActionsMenu(false, { restoreFocus: true });
+        }
+    });
+
+    dashboardActionsQuery.addEventListener('change', () => setDashboardActionsMenu(false));
+    setDashboardActionsMenu(false);
+}
 
 // ========================
 // MISSION CONTROL FUNCTIONS
@@ -3476,14 +3687,17 @@ function toggleAdvancedOptions() {
     const panel = document.getElementById('scanForm');
     const chevron = document.querySelector('.expand-chevron');
     const advancedSection = document.getElementById('advancedScanOptions');
+    const toggle = document.querySelector('.advanced-options-toggle');
 
     if (panel) {
         panel.classList.toggle('expanded');
+        const expanded = panel.classList.contains('expanded');
+        if (toggle) toggle.setAttribute('aria-expanded', String(expanded));
         if (chevron) {
-            chevron.classList.toggle('rotated');
+            chevron.classList.toggle('rotated', expanded);
         }
         if (advancedSection) {
-            advancedSection.classList.toggle('expanded');
+            advancedSection.classList.toggle('expanded', expanded);
         }
     }
 }
@@ -3493,12 +3707,14 @@ function toggleToolsPanel() {
     const advancedSection = document.getElementById('advancedScanOptions');
     const panel = document.getElementById('scanForm');
     const chevron = document.querySelector('.expand-chevron');
+    const toggle = document.querySelector('.advanced-options-toggle');
 
     if (panel && advancedSection) {
         // If panel is not visible, show it
         if (!panel.classList.contains('expanded')) {
             panel.classList.add('expanded');
             advancedSection.classList.add('expanded');
+            if (toggle) toggle.setAttribute('aria-expanded', 'true');
             if (chevron) {
                 chevron.classList.add('rotated');
             }
@@ -3506,6 +3722,7 @@ function toggleToolsPanel() {
             // Toggle off
             panel.classList.remove('expanded');
             advancedSection.classList.remove('expanded');
+            if (toggle) toggle.setAttribute('aria-expanded', 'false');
             if (chevron) {
                 chevron.classList.remove('rotated');
             }
@@ -3927,8 +4144,10 @@ document.addEventListener('keydown', (e) => {
 // Toggle chat settings panel
 function toggleChatSettings() {
     const section = document.getElementById('chatProviderSection');
+    const button = document.getElementById('btnChatSettings');
     if (section) {
         section.classList.toggle('collapsed');
+        if (button) button.setAttribute('aria-expanded', String(!section.classList.contains('collapsed')));
     }
 }
 window.toggleChatSettings = toggleChatSettings;
@@ -4202,7 +4421,10 @@ function switchView(viewName) {
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
 
         // Deactivate all nav items
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(el => {
+            el.classList.remove('active');
+            el.removeAttribute('aria-current');
+        });
 
         // Show selected view
         const view = document.getElementById(`view${viewName.charAt(0).toUpperCase() + viewName.slice(1)}`);
@@ -4213,7 +4435,12 @@ function switchView(viewName) {
 
         // Activate nav item
         const navItem = document.getElementById(`nav${viewName.charAt(0).toUpperCase() + viewName.slice(1)}`);
-        if (navItem) navItem.classList.add('active');
+        if (navItem) {
+            navItem.classList.add('active');
+            navItem.setAttribute('aria-current', 'page');
+        }
+
+        if (responsiveShellQuery.matches) closeShellDrawers();
 
         // Initialize view specific logic (deferred to not block UI)
         setTimeout(() => {

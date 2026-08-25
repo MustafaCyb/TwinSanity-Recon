@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" href="/static/favicon.png">
     <title>TwinSanity Recon V2</title>
     <script src="/static/vendor/chart.umd.js?v=4.4.1"></script>
-    <link rel="stylesheet" href="/static/css/style.css?v=20260115a">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260825a">
 </head>
 
 <body>
@@ -25,8 +25,7 @@
                         <path d="M2 12l10 5 10-5" />
                     </svg>
                 </div>
-                <span class="logo-text">TwinSanity <span
-                        style="color: var(--accent); font-weight: 400;">Recon</span></span>
+                <span class="logo-text">TwinSanity <span class="logo-text-secondary">Recon</span></span>
             </div>
 
             <div class="mission-control-scanner">
@@ -64,43 +63,91 @@
                 </div>
 
                 <button type="button" id="mcStartScan" class="mc-scan-btn" onclick="startScanFromMC()">
-                    ⚡ START SCAN
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        aria-hidden="true">
+                        <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z" />
+                    </svg>
+                    <span>Start Scan</span>
                 </button>
             </div>
 
             <div class="mission-control-actions">
+                <button type="button" class="mc-tools-btn shell-drawer-toggle" id="btnNavDrawer"
+                    aria-label="Open navigation" aria-controls="primarySidebar" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        aria-hidden="true">
+                        <line x1="4" y1="6" x2="20" y2="6" />
+                        <line x1="4" y1="12" x2="20" y2="12" />
+                        <line x1="4" y1="18" x2="20" y2="18" />
+                    </svg>
+                </button>
+
                 <!-- Island View (Gamified Mode) -->
-                <a href="/island" class="mc-tools-btn island-mode-btn" title="🎮 TwinSanity Island View - Gamified Mode"
-                    style="text-decoration: none; background: linear-gradient(135deg, #2d004d, #ff0055); border-color: #ffd700;">
-                    🏝️
+                <a href="/island" class="mc-tools-btn island-mode-btn" title="TwinSanity Island View"
+                    aria-label="Open TwinSanity Island View">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        aria-hidden="true">
+                        <path d="M12 22v-8" />
+                        <path d="M8 22h8" />
+                        <path d="M12 14c-1-4-4-6-8-6 1 4 4 6 8 6Z" />
+                        <path d="M12 14c1-4 4-6 8-6-1 4-4 6-8 6Z" />
+                        <path d="M12 9c0-3 2-5 5-6 0 3-2 5-5 6Z" />
+                    </svg>
                 </a>
 
                 <!-- Theme Toggle -->
                 <div class="theme-toggle-container">
                     <label class="theme-toggle" title="Toggle Light/Dark Mode">
-                        <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
+                        <input type="checkbox" id="themeToggle" onchange="toggleTheme()"
+                            aria-label="Use light theme">
                         <span class="theme-slider"></span>
                     </label>
                 </div>
 
                 <!-- More Tools Dropdown -->
-                <button type="button" class="mc-tools-btn" onclick="toggleToolsPanel()" title="Advanced Tools">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button type="button" class="mc-tools-btn mc-advanced-toggle" onclick="toggleToolsPanel()"
+                    title="Advanced Tools" aria-label="Toggle advanced scan tools">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        aria-hidden="true">
                         <circle cx="12" cy="12" r="3"></circle>
                         <path
                             d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
                         </path>
                     </svg>
                 </button>
+
+                <button type="button" class="mc-tools-btn shell-drawer-toggle" id="btnChatDrawer"
+                    aria-label="Open AI assistant" aria-controls="chatPanel" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        aria-hidden="true">
+                        <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" />
+                        <path d="M8 9h8M8 13h5" />
+                    </svg>
+                </button>
             </div>
         </header>
 
+        <button type="button" class="shell-backdrop" id="shellBackdrop" aria-label="Close open panel"
+            tabindex="-1"></button>
+
         <!-- Sidebar (Navigation Only) -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="primarySidebar" aria-label="Primary navigation">
+            <div class="drawer-header">
+                <span>Navigation &amp; Scan Tools</span>
+                <button type="button" class="btn-icon btn-icon-transparent drawer-close" id="btnCloseNavDrawer"
+                    aria-label="Close navigation">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
             <!-- Navigation Menu -->
-            <nav class="sidebar-nav" style="padding-top: 1rem;">
+            <nav class="sidebar-nav sidebar-nav-top">
                 <div class="nav-title">Navigation</div>
-                <button type="button" class="nav-item active" id="navDashboard" onclick="switchView('dashboard')">
+                <button type="button" class="nav-item active" id="navDashboard" onclick="switchView('dashboard')"
+                    aria-current="page">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="3" width="7" height="7"></rect>
                         <rect x="14" y="3" width="7" height="7"></rect>
@@ -128,13 +175,14 @@
 
             <!-- Advanced Scanner Options (Collapsible) -->
             <div class="sidebar-content" id="advancedScanOptions">
-                <div class="nav-title" style="cursor: pointer;" onclick="toggleAdvancedOptions()">
-                    <span>⚙️ Advanced Options</span>
+                <button type="button" class="nav-title advanced-options-toggle" onclick="toggleAdvancedOptions()"
+                    aria-controls="scanForm" aria-expanded="false">
+                    <span>Advanced Options</span>
                     <svg class="expand-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2">
                         <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
-                </div>
+                </button>
                 <form id="scanForm" class="advanced-options-panel">
                     <!-- Keep original toggles but hidden in sidebar, synced with MC -->
                     <input type="hidden" id="domainInput">
@@ -393,22 +441,21 @@
                                         aria-label="Add single proxy">+ Add</button>
                                 </div>
 
-                                <label class="form-label form-label-sm" style="margin-top: 8px;">Bulk Proxy List</label>
-                                <textarea id="proxyListInput" class="form-input form-input-sm" rows="4"
+                                <label class="form-label form-label-sm proxy-list-label">Bulk Proxy List</label>
+                                <textarea id="proxyListInput" class="form-input form-input-sm proxy-list-input" rows="4"
                                     placeholder="Paste multiple proxies (one per line):&#10;host1:port1&#10;host2:port2&#10;socks5://host3:port3"
-                                    style="resize: vertical; min-height: 60px;"></textarea>
+                                    ></textarea>
                                 <button type="button" class="btn btn-ghost btn-full-sm" onclick="loadProxyList()"
                                     aria-label="Load proxy list">
                                     📋 Load List
                                 </button>
 
-                                <div id="proxyStats" class="proxy-stats hidden"
-                                    style="margin-top: 8px; font-size: 0.8em; color: var(--text-muted);">
+                                <div id="proxyStats" class="proxy-stats proxy-stats-summary hidden">
                                     <span id="proxyCount">0</span> proxies loaded
                                 </div>
 
-                                <button type="button" class="btn btn-ghost btn-sm btn-danger-text"
-                                    onclick="clearProxies()" style="margin-top: 6px;">
+                                <button type="button" class="btn btn-ghost btn-sm btn-danger-text proxy-clear-btn"
+                                    onclick="clearProxies()">
                                     Clear All
                                 </button>
                             </div>
@@ -444,7 +491,8 @@
                         <div class="user-name" id="userName">Loading...</div>
                         <div class="user-role" id="userRole">...</div>
                     </div>
-                    <button class="btn-icon-tiny" onclick="handleLogout()" title="Logout">
+                    <button type="button" class="btn-icon-tiny" onclick="handleLogout()" title="Logout"
+                        aria-label="Log out">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -459,7 +507,7 @@
         <main class="main" id="mainContent">
             <!-- VIEW: DASHBOARD -->
             <div id="viewDashboard" class="view-section active">
-                <header class="main-header">
+                <header class="main-header dashboard-header">
                     <select id="sessionSelect" class="session-select" title="Select a previous scan session">
                         <option value="">Select previous scan...</option>
                     </select>
@@ -467,71 +515,27 @@
                         <span class="connection-dot"></span>
                         <span class="connection-text">Ready</span>
                     </div>
-                    <div class="header-actions">
-                        <button class="btn-icon" id="btnCveExplorer" onclick="toggleCveExplorer()" title="CVE Explorer">
+                    <div class="header-actions dashboard-actions" id="dashboardHeaderActions">
+                        <button type="button" class="btn-icon dashboard-priority-action" id="btnNew"
+                            title="New Scan" aria-label="Start a new scan">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path
-                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
-                                </path>
-                            </svg>
-                        </button>
-                        <button class="btn-icon" id="btnPublicScans" onclick="togglePublicScans()" title="Public Scans">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="2" y1="12" x2="22" y2="12"></line>
-                                <path
-                                    d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
-                                </path>
-                            </svg>
-                        </button>
-                        <div class="divider-vertical"></div>
-                        <button class="btn-icon" id="btnNew" title="New Scan">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
+                                stroke-width="2" aria-hidden="true">
                                 <line x1="12" y1="5" x2="12" y2="19" />
                                 <line x1="5" y1="12" x2="19" y2="12" />
                             </svg>
                         </button>
-                        <button class="btn-icon" id="btnRescan" title="Rescan">
+                        <button type="button" class="btn-icon dashboard-priority-action" id="btnRescan"
+                            title="Rescan" aria-label="Run this scan again">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
+                                stroke-width="2" aria-hidden="true">
                                 <path d="M23 4v6h-6" />
                                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                             </svg>
                         </button>
-                        <button class="btn-icon btn-clear-cache" id="btnClearCache" title="Clear Subdomain Cache"
-                            onclick="clearSubdomainCache()">
+                        <button type="button" class="btn-icon btn-icon-ai dashboard-priority-action" id="btnReport"
+                            title="Generate Report" aria-label="Generate report" onclick="showReportDialog()">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M3 6h18" />
-                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                <line x1="10" y1="11" x2="10" y2="17" />
-                                <line x1="14" y1="11" x2="14" y2="17" />
-                            </svg>
-                        </button>
-                        <button class="btn-icon" id="btnVisibility" title="Toggle Visibility (Private/Public)" disabled>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                        </button>
-                        <button class="btn-icon btn-danger" id="btnDelete" title="Delete Session">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <polyline points="3 6 5 6 21 6" />
-                                <path
-                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                <line x1="10" y1="11" x2="10" y2="17" />
-                                <line x1="14" y1="11" x2="14" y2="17" />
-                            </svg>
-                        </button>
-                        <button class="btn-icon btn-icon-ai" id="btnReport" title="Generate Report"
-                            onclick="showReportDialog()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                stroke-width="2" aria-hidden="true">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                                 <polyline points="14 2 14 8 20 8" />
                                 <line x1="16" y1="13" x2="8" y2="13" />
@@ -539,6 +543,77 @@
                                 <polyline points="10 9 9 9 8 9" />
                             </svg>
                         </button>
+                        <button type="button" class="btn-icon dashboard-more-toggle" id="btnDashboardMore"
+                            title="More scan actions" aria-label="More scan actions" aria-haspopup="true"
+                            aria-controls="dashboardSecondaryActions" aria-expanded="false">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"
+                                aria-hidden="true">
+                                <circle cx="5" cy="12" r="1.75" />
+                                <circle cx="12" cy="12" r="1.75" />
+                                <circle cx="19" cy="12" r="1.75" />
+                            </svg>
+                        </button>
+
+                        <div class="header-secondary-actions" id="dashboardSecondaryActions"
+                            aria-label="Additional scan actions">
+                            <button type="button" class="btn-icon" id="btnCveExplorer" onclick="toggleCveExplorer()"
+                                title="CVE Explorer" aria-label="Open CVE Explorer">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" aria-hidden="true">
+                                    <path
+                                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+                                    </path>
+                                </svg>
+                                <span class="action-label">CVE Explorer</span>
+                            </button>
+                            <button type="button" class="btn-icon" id="btnPublicScans" onclick="togglePublicScans()"
+                                title="Public Scans" aria-label="Open public scans">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <path
+                                        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                                    </path>
+                                </svg>
+                                <span class="action-label">Public Scans</span>
+                            </button>
+                            <div class="divider-vertical" aria-hidden="true"></div>
+                            <button type="button" class="btn-icon btn-clear-cache" id="btnClearCache"
+                                title="Clear Subdomain Cache" aria-label="Clear subdomain cache"
+                                onclick="clearSubdomainCache()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" aria-hidden="true">
+                                <path d="M3 6h18" />
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                <line x1="10" y1="11" x2="10" y2="17" />
+                                <line x1="14" y1="11" x2="14" y2="17" />
+                            </svg>
+                                <span class="action-label">Clear Cache</span>
+                            </button>
+                            <button type="button" class="btn-icon" id="btnVisibility"
+                                title="Toggle Visibility (Private/Public)" aria-label="Toggle scan visibility" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" aria-hidden="true">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                                <span class="action-label">Visibility</span>
+                            </button>
+                            <button type="button" class="btn-icon btn-danger" id="btnDelete" title="Delete Session"
+                                aria-label="Delete scan session">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" aria-hidden="true">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path
+                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                <line x1="10" y1="11" x2="10" y2="17" />
+                                <line x1="14" y1="11" x2="14" y2="17" />
+                            </svg>
+                                <span class="action-label">Delete Session</span>
+                            </button>
+                        </div>
                     </div>
                 </header>
 
@@ -576,8 +651,10 @@
                     </div>
 
                     <!-- Report Tabs -->
-                    <div class="report-tabs">
-                        <button class="report-tab active" data-tab="findings" onclick="switchReportTab('findings')">
+                    <div class="report-tabs" id="reportTabs" role="tablist" aria-label="Scan report sections">
+                        <button type="button" class="report-tab active" id="findingsTab" role="tab"
+                            data-tab="findings" aria-selected="true" aria-controls="findingsPanel" tabindex="0"
+                            onclick="switchReportTab('findings')">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -588,8 +665,9 @@
                             </svg>
                             Findings Report
                         </button>
-                        <button class="report-tab" data-tab="ai-report" onclick="switchReportTab('ai-report')"
-                            id="aiReportTab">
+                        <button type="button" class="report-tab" data-tab="ai-report"
+                            onclick="switchReportTab('ai-report')" id="aiReportTab" role="tab"
+                            aria-selected="false" aria-controls="aiReportPanel" tabindex="-1">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
@@ -597,8 +675,9 @@
                             AI Analysis Report
                             <span id="aiReportBadge" class="ai-badge hidden">NEW</span>
                         </button>
-                        <button class="report-tab" data-tab="tools-findings" onclick="switchReportTab('tools-findings')"
-                            id="toolsFindingsTab">
+                        <button type="button" class="report-tab" data-tab="tools-findings"
+                            onclick="switchReportTab('tools-findings')" id="toolsFindingsTab" role="tab"
+                            aria-selected="false" aria-controls="toolsFindingsPanel" tabindex="-1">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
                                 <path
@@ -610,7 +689,8 @@
                     </div>
 
                     <!-- Findings Report Panel -->
-                    <div id="findingsPanel" class="report-panel">
+                    <div id="findingsPanel" class="report-panel" role="tabpanel" aria-labelledby="findingsTab"
+                        tabindex="0">
                         <div class="content-area">
                             <div class="charts-row">
                                 <div class="chart-card">
@@ -640,7 +720,8 @@
                                     <div class="section-actions">
                                         <input type="text" id="subdomainSearch" class="filter-input compact"
                                             placeholder="Filter subdomains...">
-                                        <button id="toggleSubdomains" class="btn-icon" title="Toggle view">
+                                        <button type="button" id="toggleSubdomains" class="btn-icon"
+                                            title="Toggle view" aria-label="Toggle subdomain list">
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                                                 stroke="currentColor" stroke-width="2">
                                                 <polyline points="6 9 12 15 18 9" />
@@ -709,7 +790,8 @@
                     </div> <!-- End Findings Panel -->
 
                     <!-- AI Analysis Report Panel -->
-                    <div id="aiReportPanel" class="report-panel hidden">
+                    <div id="aiReportPanel" class="report-panel hidden" role="tabpanel"
+                        aria-labelledby="aiReportTab" tabindex="0" hidden>
                         <div class="content-area ai-report-content-area">
                             <div id="aiReportEmpty" class="ai-report-empty">
                                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)"
@@ -797,8 +879,9 @@
                     </div> <!-- End AI Report Panel -->
 
                     <!-- Tools Findings Panel -->
-                    <div id="toolsFindingsPanel" class="report-panel hidden">
-                        <div class="content-area" style="overflow-y: auto; max-height: calc(100vh - 200px);">
+                    <div id="toolsFindingsPanel" class="report-panel hidden" role="tabpanel"
+                        aria-labelledby="toolsFindingsTab" tabindex="0" hidden>
+                        <div class="content-area tools-findings-content-area">
                             <div id="toolsFindingsEmpty" class="ai-report-empty">
                                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)"
                                     stroke-width="1">
@@ -887,7 +970,8 @@
                         <!-- ... (same as before) ... -->
                         <div class="explorer-controls">
                             <input type="text" id="globalCveSearch" class="filter-input" placeholder="Search CVEs...">
-                            <button id="btnRefreshCves" class="btn-icon" title="Refresh">
+                            <button type="button" id="btnRefreshCves" class="btn-icon" title="Refresh"
+                                aria-label="Refresh CVE Explorer">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2">
                                     <path d="M23 4v6h-6" />
@@ -902,7 +986,7 @@
                 <div id="publicScansPanel" class="hidden">
                     <div class="explorer-header">
                         <h2 class="section-title">Public Scans</h2>
-                        <button id="btnRefreshPublicScans" class="btn-icon" onclick="loadPublicScans()"
+                        <button type="button" id="btnRefreshPublicScans" class="btn-icon" onclick="loadPublicScans()"
                             aria-label="Refresh public scans" title="Refresh public scans">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" aria-hidden="true">
@@ -939,8 +1023,9 @@
                             </svg>
                             Add User
                         </button>
-                        <button class="btn-icon" onclick="window.adminPanel && window.adminPanel.loadUsers()"
-                            title="Refresh">
+                        <button type="button" class="btn-icon"
+                            onclick="window.adminPanel && window.adminPanel.loadUsers()" title="Refresh"
+                            aria-label="Refresh users">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
                                 <path d="M23 4v6h-6" />
@@ -1043,8 +1128,8 @@
                         <div class="shodan-plan-badge" id="shodanPlanBadge">
                             <span id="shodanPlanText">Loading...</span>
                         </div>
-                        <button class="btn btn-icon" onclick="window.shodanPanel?.refreshStatus()"
-                            title="Refresh Status">
+                        <button type="button" class="btn btn-icon" onclick="window.shodanPanel?.refreshStatus()"
+                            title="Refresh Status" aria-label="Refresh Shodan status">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
                                 <path d="M23 4v6h-6"></path>
@@ -1170,7 +1255,7 @@
         </main>
 
         <!-- Chat Panel -->
-        <aside class="chat-panel">
+        <aside class="chat-panel" id="chatPanel" aria-label="AI security assistant">
             <div class="chat-header">
                 <div class="chat-avatar">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
@@ -1183,12 +1268,21 @@
                     <div class="chat-title">AI Security Assistant</div>
                     <div class="chat-subtitle" id="llmProvider">Select a provider below</div>
                 </div>
-                <button class="btn-icon btn-icon-transparent" id="btnChatSettings" onclick="toggleChatSettings()"
-                    title="AI Settings">
+                <button type="button" class="btn-icon btn-icon-transparent" id="btnChatSettings"
+                    onclick="toggleChatSettings()" title="AI Settings" aria-label="Toggle AI settings"
+                    aria-controls="chatProviderSection" aria-expanded="true">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="3" />
                         <path
                             d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                </button>
+                <button type="button" class="btn-icon btn-icon-transparent drawer-close" id="btnCloseChatDrawer"
+                    aria-label="Close AI assistant">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                 </button>
             </div>
@@ -1208,16 +1302,14 @@
                 <!-- Old status indicator removed to avoid confusion with new badge -->
 
                 <!-- Dynamic Model Selector (populated from config.yaml via API) -->
-                <div id="providerModelSection" class="provider-model-section"
-                    style="display: none; margin-top: 0.5rem; flex-direction: column; gap: 4px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <label class="form-label form-label-sm" for="providerModelSelect" style="margin:0;">Model
+                <div id="providerModelSection" class="provider-model-section provider-model-controls">
+                    <div class="provider-model-heading">
+                        <label class="form-label form-label-sm provider-model-label" for="providerModelSelect">Model
                             Selection</label>
-                        <span id="modelConnectionStatus" class="badge badge-sm"
-                            style="display: none; font-size: 0.7rem; padding: 2px 6px;"></span>
+                        <span id="modelConnectionStatus" class="badge badge-sm model-connection-status"></span>
                     </div>
                     <select id="providerModelSelect" class="form-input form-input-sm"
-                        title="Select model for this provider" aria-label="Select Model" style="width: 100%;">
+                        title="Select model for this provider" aria-label="Select Model">
                         <option value="">Loading models...</option>
                     </select>
                 </div>
@@ -1279,7 +1371,7 @@
         </aside>
     </div>
 
-    <script src="/static/js/main.js?v=20260607a"></script>
+    <script src="/static/js/main.js?v=20260825a"></script>
     <script>
         // ============================================================
         // AI Provider Management
@@ -1420,8 +1512,12 @@
         // Toggle chat settings panel
         function toggleChatSettings() {
             const section = document.getElementById('chatProviderSection');
+            const button = document.getElementById('btnChatSettings');
             if (section) {
                 section.classList.toggle('collapsed');
+                if (button) {
+                    button.setAttribute('aria-expanded', String(!section.classList.contains('collapsed')));
+                }
             }
         }
 
@@ -1822,7 +1918,7 @@
             // Show loading
             const btn = document.getElementById('btnGenerateReport');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner" style="display:inline-block;width:16px;height:16px;border:2px solid transparent;border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite"></span> Generating...';
+                btn.innerHTML = '<span class="button-loading-spinner" aria-hidden="true"></span> Generating...';
             btn.disabled = true;
 
             if (typeof toast !== 'undefined') {
@@ -1961,7 +2057,8 @@
                     </svg>
                     Generate Report
                 </h3>
-                <button class="btn-icon btn-icon-transparent" title="Close" onclick="hideReportDialog()">
+                <button type="button" class="btn-icon btn-icon-transparent" title="Close"
+                    aria-label="Close report dialog" onclick="hideReportDialog()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18" />
                         <line x1="6" y1="6" x2="18" y2="18" />
@@ -2036,7 +2133,8 @@
                     </svg>
                     <span id="modalSubdomainName">subdomain.example.com</span>
                 </h3>
-                <button class="btn-icon btn-icon-transparent" title="Close" onclick="hideSubdomainModal()">
+                <button type="button" class="btn-icon btn-icon-transparent" title="Close"
+                    aria-label="Close subdomain details" onclick="hideSubdomainModal()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18" />
                         <line x1="6" y1="6" x2="18" y2="18" />
@@ -2129,7 +2227,8 @@
                     </svg>
                     Create New User
                 </h3>
-                <button class="btn-icon btn-icon-transparent" title="Close" onclick="hideCreateUserModal()">
+                <button type="button" class="btn-icon btn-icon-transparent" title="Close"
+                    aria-label="Close create user dialog" onclick="hideCreateUserModal()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18" />
                         <line x1="6" y1="6" x2="18" y2="18" />
@@ -2186,7 +2285,8 @@
                     </svg>
                     Edit User
                 </h3>
-                <button class="btn-icon btn-icon-transparent" title="Close" onclick="hideEditUserModal()">
+                <button type="button" class="btn-icon btn-icon-transparent" title="Close"
+                    aria-label="Close edit user dialog" onclick="hideEditUserModal()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18" />
                         <line x1="6" y1="6" x2="18" y2="18" />

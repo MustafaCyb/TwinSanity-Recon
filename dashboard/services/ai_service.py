@@ -133,7 +133,7 @@ def extract_json_from_text(text: str) -> Optional[Dict]:
 
 async def call_gemini(prompt: str, _for_analysis: bool = False, scan_id: str = None) -> Tuple[Optional[str], Optional[str], Optional[int]]:
     """
-    Call Gemini API using V1 compatible REST endpoint.
+    Call Gemini using the Google Gen AI SDK with a REST fallback.
     Returns (response, error, retry_after)
     """
     if not GEMINI_API_KEY:
@@ -148,21 +148,18 @@ async def call_gemini(prompt: str, _for_analysis: bool = False, scan_id: str = N
     # Audit log
     log_llm_call("gemini", scan_id or "unknown", len(prompt), False)
     
-    # Try SDK first (non-blocking with executor)
+    # Try the async Google Gen AI SDK first.
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel(GEMINI_MODEL)
-        
-        # Run in executor to avoid blocking
-        loop = asyncio.get_running_loop()
-        response = await asyncio.wait_for(
-            loop.run_in_executor(
-                None, 
-                lambda: model.generate_content(prompt)
-            ),
-            timeout=90
-        )
+        from google import genai
+
+        async with genai.Client(api_key=GEMINI_API_KEY).aio as client:
+            response = await asyncio.wait_for(
+                client.models.generate_content(
+                    model=GEMINI_MODEL,
+                    contents=prompt,
+                ),
+                timeout=90,
+            )
         
         # Extract text safely
         if hasattr(response, 'text') and response.text:
@@ -177,7 +174,7 @@ async def call_gemini(prompt: str, _for_analysis: bool = False, scan_id: str = N
         return None, "Gemini returned empty response", None
         
     except ImportError:
-        logger.debug("Gemini SDK not installed, using REST API")
+        logger.debug("Google Gen AI SDK not installed, using REST API")
     except asyncio.TimeoutError:
         return None, "Gemini SDK timeout after 90s", None
     except Exception as e:

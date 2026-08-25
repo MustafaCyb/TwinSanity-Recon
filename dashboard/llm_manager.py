@@ -31,11 +31,13 @@ except ImportError:
     OllamaAsyncClient = None
 
 try:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types as genai_types
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
     genai = None
+    genai_types = None
 
 logger = logging.getLogger("LLMManager")
 
@@ -152,9 +154,7 @@ class LLMManager:
                 enabled=True,
                 available=True
             )
-            if GENAI_AVAILABLE:
-                genai.configure(api_key=self.gemini_api_key)
-            logger.info(f"Gemini provider enabled: {gemini_cfg.get('model', 'gemini-2.0-flash')}")
+            logger.info(f"Gemini provider enabled: {gemini_cfg.get('model', 'gemini-3.6-flash')}")
         
         # Ollama Cloud
         cloud_cfg = providers_config.get("ollama_cloud", {})
@@ -315,27 +315,23 @@ class LLMManager:
             raise Exception("GEMINI_API_KEY not configured")
         
         gemini_cfg = self.config.get("providers", {}).get("gemini", {})
-        model_name = model or gemini_cfg.get("model", "gemini-2.0-flash")
+        model_name = model or gemini_cfg.get("model", "gemini-3.6-flash")
         
-        # Try SDK first (with executor to avoid blocking)
+        # Try the async Google Gen AI SDK first.
         if GENAI_AVAILABLE:
             try:
-                loop = asyncio.get_event_loop()
-                model_obj = genai.GenerativeModel(model_name)
-                
-                response = await asyncio.wait_for(
-                    loop.run_in_executor(
-                        None,
-                        lambda: model_obj.generate_content(
-                            prompt,
-                            generation_config=genai.GenerationConfig(
+                async with genai.Client(api_key=self.gemini_api_key).aio as client:
+                    response = await asyncio.wait_for(
+                        client.models.generate_content(
+                            model=model_name,
+                            contents=prompt,
+                            config=genai_types.GenerateContentConfig(
                                 temperature=temperature,
-                                max_output_tokens=max_tokens
-                            )
-                        )
-                    ),
-                    timeout=timeout
-                )
+                                max_output_tokens=max_tokens,
+                            ),
+                        ),
+                        timeout=timeout,
+                    )
                 
                 # Safely extract text
                 text = ""
