@@ -7579,6 +7579,14 @@ p,
     box-shadow: none;
 }
 
+#btnVisibility.visibility-public {
+    color: var(--accent-cyan);
+}
+
+#btnVisibility.visibility-private {
+    color: var(--text-muted);
+}
+
 .btn-clear-cache:hover,
 .mc-tools-btn:hover,
 .session-select:hover {
